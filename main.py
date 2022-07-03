@@ -24,7 +24,7 @@ LOG_DIR_BASE = 'logs'
 build_compiler(client, COMPILER_SRC_PATH, COMPILER_BUILD_PATH)
 
 testcases = walk_testcase(TESTCASE_PATH)
-testcases = testcases[:2]
+testcases = testcases
 
 logName = datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + "_" + str(os.getpid())
 logDir = os.path.realpath(LOG_DIR_BASE + os.sep + logName)

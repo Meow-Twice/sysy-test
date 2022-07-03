@@ -22,7 +22,11 @@ def build_compiler(client: docker.DockerClient, source_path: str, artifact_path:
         os.path.realpath(source_path): {'bind': '/project/src', 'mode': 'ro'},
         os.path.realpath(artifact_path): {'bind': '/project/target', 'mode': 'rw'}
     }, auto_remove=True)
-    container.wait(timeout=60)
+    try:
+        container.wait(timeout=10)
+    except Exception as e:
+        container.kill()
+        raise e
     print('compiler build finished.')
 
 def compile_testcase(client: docker.DockerClient, compiler_path: str, sy_path: str, output_path: str, type: str='arm'):
@@ -40,9 +44,13 @@ def compile_testcase(client: docker.DockerClient, compiler_path: str, sy_path: s
         os.path.realpath(sy_path): {'bind': '/compiler/test.sy', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     }, auto_remove=True)
-    wait_body = container.wait(timeout=60)
-    if wait_body['StatusCode'] != 0:
-        raise Exception(wait_body)
+    try:
+        wait_body = container.wait(timeout=10)
+        if wait_body['StatusCode'] != 0:
+            raise Exception(wait_body)
+    except Exception as e:
+        container.kill()
+        raise e
     print('compiling testcase {0} finished.'.format(case_name))
 
 def run_testcase(client: docker.DockerClient, code_path: str, input_path: str, output_path: str, type: str):
@@ -61,5 +69,9 @@ def run_testcase(client: docker.DockerClient, code_path: str, input_path: str, o
         os.path.realpath(input_path): {'bind': '/compiler/input.txt', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     }, auto_remove=True)
-    container.wait(timeout=60)
+    try:
+        container.wait(timeout=10)
+    except Exception as e:
+        container.kill()
+        raise e
     print('run testcase {0} finished.'.format(case_name))

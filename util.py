@@ -35,7 +35,7 @@ def answer_check(ans_file: str, out_file: str): # (correct: bool, comment: str)
 def display_result(results: dict, title: str):
     # (name, verdict, comment, perf, stdin, stdout, answer)
     table_rows = []
-    for result in results:
+    for result in sorted(results, key=lambda r: r[0]):
         result_out = list(result)
         result_out[1] = verdict_name[result[1]]
         table_rows.append("".join(['<td>{0}</td>'.format(html.escape(str(s)).replace('\n', '<br>')) for s in result_out]))

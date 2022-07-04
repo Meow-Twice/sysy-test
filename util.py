@@ -1,7 +1,7 @@
 import os
 import html
 
-from const import ACCEPTED, BUILD_FAILED, RUNTIME_ERROR, WRONG_ANSWER, verdict_id2name
+from const import verdict_name
 
 # 遍历测试点
 def walk_testcase(dir: str): # [(name, path_to_sy, path_to_in, path_to_out)]
@@ -37,7 +37,7 @@ def display_result(results: dict, title: str):
     table_rows = []
     for result in results:
         result_out = list(result)
-        result_out[1] = verdict_id2name[result[1]]
+        result_out[1] = verdict_name[result[1]]
         table_rows.append("".join(['<td>{0}</td>'.format(html.escape(str(s)).replace('\n', '<br>')) for s in result_out]))
     text = '''<html>
 <head>
@@ -51,5 +51,3 @@ def display_result(results: dict, title: str):
 </body>
 </html>'''.format(title=title, body="\n".join(['<tr>{0}</tr>'.format(s) for s in table_rows]))
     return text
-
-

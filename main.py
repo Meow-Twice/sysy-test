@@ -5,6 +5,7 @@ from util import walk_testcase, answer_check, display_result
 from datetime import datetime
 import os, shutil
 import json
+from concurrent.futures import ThreadPoolExecutor
 
 client = docker.from_env()
 
@@ -18,21 +19,22 @@ COMPILER_NAME = 'compiler.jar'  # name of executable jar
 CompilerPath = COMPILER_BUILD_PATH + os.sep + COMPILER_NAME
 
 TESTCASE_PATH = config['testcase-path']
+NUM_PARALLEL = config['num-parallel']
 
 LOG_DIR_BASE = 'logs'
 
 build_compiler(client, COMPILER_SRC_PATH, COMPILER_BUILD_PATH)
 
 testcases = walk_testcase(TESTCASE_PATH)
-testcases = testcases
+testcases = testcases   # you can filter only part of the testcases here.
 
 logName = datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + "_" + str(os.getpid())
 logDir = os.path.realpath(LOG_DIR_BASE + os.sep + logName)
+os.makedirs(logDir)
 
 results = [] # (name, verdict, comment, perf, stdin, stdout, answer)
 
-for testcase in testcases:
-    print(testcase)
+def test_one_case(testcase): # testcase is a tuple of (name, path_to_sy, path_to_in, path_to_out)
     name, origin_sy, origin_in, origin_ans = testcase
     # 拷贝必需的文件
     workDir = logDir + os.sep + name
@@ -54,7 +56,7 @@ for testcase in testcases:
         comment = str(e)
         results.append((name, verdict, comment, '', '', '', ''))
         print('Testcase {0} COMPILE_ERROR with {1}'.format(name, comment))
-        continue
+        return
     file_code = workDir + os.sep + name + '.ll' # LLVM
     shutil.copy(outDir + os.sep + 'test.ll', file_code)
     try:
@@ -64,7 +66,7 @@ for testcase in testcases:
         comment = str(e)
         results.append((name, verdict, comment, '', '', '', ''))
         print('Testcase {0} RUNTIME_ERROR with {1}'.format(name, comment))
-        continue
+        return
     file_out = workDir + os.sep + 'output.txt'
     file_perf = workDir + os.sep + 'perf.txt'
     shutil.copy(outDir + os.sep + 'output.txt', file_out)
@@ -72,7 +74,6 @@ for testcase in testcases:
     with open(file_perf, 'r') as fp:
         perf_text = fp.read()
     correct, comment = answer_check(file_ans, file_out)
-    
     if not correct:
         with open(file_in, 'r') as fp:
             stdin_text = fp.read()
@@ -83,6 +84,11 @@ for testcase in testcases:
         results.append((name, WRONG_ANSWER, comment, perf_text, stdin_text, stdout_text, answer_text))
     else:
         results.append((name, ACCEPTED, comment, perf_text, '', '', ''))
-    print('Testcase {0} finished!'.format(name))
+    print('{0} finished: correct={1}'.format(name, correct))
+
+# 使用线程池运行测试点
+with ThreadPoolExecutor(max_workers=NUM_PARALLEL) as pool:
+    pool.map(test_one_case, testcases)
+    
 with open(logDir + os.sep + 'results.html', 'w') as fp:
     fp.write(display_result(results, title=logName))

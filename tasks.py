@@ -1,17 +1,24 @@
 import docker
 import os
 
+from const import TIMEOUT_SECONDS
+
 JAVA_IMAGE = 'openjdk:15-alpine'
 BUILD_COMPILER_CMD = '/bin/sh -c "javac -d target -encoding \'utf-8\' $(find src -name \'*.java\' -type f); \
-    cd target; echo \'**\' > .gitignore; mkdir -p META-INF; echo -e \'Manifest-Version: 1.0\\r\\nMain-Class: Compiler\\r\\n\\r\\n\' > META-INF/MANIFEST.MF; \
+    cd target; echo \'**\' > .gitignore; mkdir -p META-INF; \
+    echo -e \'Manifest-Version: 1.0\\r\\nMain-Class: Compiler\\r\\n\\r\\n\' > META-INF/MANIFEST.MF; \
     jar -cvfm compiler.jar META-INF/MANIFEST.MF *"'
 
 COMPILE_LLVM_CMD = '/bin/sh -c "java -jar compiler.jar -emit-llvm -o test.ll test.sy; cp test.ll /output/"'
 COMPILE_ARM_CMD = '/bin/sh -c "java -jar compiler.jar -S -o test.S test.sy; cp test.ll /output/"'
 
 SYSY_IMAGE = "sysy:latest"
-RUN_LLVM_CMD = '/bin/sh -c "sysy-run-llvm.sh test.ll <input.txt >output.txt 2>perf.txt; echo $? >> output.txt; cp output.txt /output/; cp perf.txt /output/"'
-RUN_QEMU_CMD = '/bin/sh -c "sysy-elf.sh test.S; sysy-run-elf.sh test.elf <input.txt >output.txt 2>perf.txt; echo $? >> output.txt; cp output.txt /output/; cp perf.txt /output/"'
+RUN_LLVM_CMD = '/bin/sh -c "sysy-run-llvm.sh test.ll <input.txt >output.txt 2>perf.txt; \
+    echo $? >> exit.txt; cp perf.txt /output/; \
+    if [ ! -z $(tail -c 1 output.txt) ]; then echo >> output.txt; fi; cat exit.txt >> output.txt; cp output.txt /output/"'
+RUN_QEMU_CMD = '/bin/sh -c "sysy-elf.sh test.S; sysy-run-elf.sh test.elf <input.txt >output.txt 2>perf.txt; \
+    echo $? >> exit.txt; cp perf.txt /output/; \
+    if [ ! -z $(tail -c 1 output.txt) ]; then echo >> output.txt; fi; cat exit.txt >> output.txt; cp output.txt /output/"'
 
 # 构建编译器, project_path 和 artifact_path 均为主机的路径 (使用 -v 选项挂载)
 def build_compiler(client: docker.DockerClient, source_path: str, artifact_path: str) -> bool:
@@ -23,7 +30,7 @@ def build_compiler(client: docker.DockerClient, source_path: str, artifact_path:
         os.path.realpath(artifact_path): {'bind': '/project/target', 'mode': 'rw'}
     }, auto_remove=True)
     try:
-        container.wait(timeout=10)
+        container.wait(timeout=TIMEOUT_SECONDS)
     except Exception as e:
         container.kill()
         raise e
@@ -32,7 +39,7 @@ def build_compiler(client: docker.DockerClient, source_path: str, artifact_path:
 def compile_testcase(client: docker.DockerClient, compiler_path: str, sy_path: str, output_path: str, type: str='arm'):
     case_name = os.path.basename(sy_path).split('.')[0]
     container_name = 'compiler_{pid}_compile_{type}_{name}'.format(pid=os.getpid(), type=type, name=case_name)
-    print('compiling testcase {0}'.format(case_name))
+    print('{0} - compiling'.format(case_name))
     if type == 'llvm':
         cmd = COMPILE_LLVM_CMD
     elif type == 'arm':
@@ -45,19 +52,21 @@ def compile_testcase(client: docker.DockerClient, compiler_path: str, sy_path: s
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     }, auto_remove=True)
     try:
-        wait_body = container.wait(timeout=10)
+        wait_body = container.wait(timeout=TIMEOUT_SECONDS)
         if wait_body['StatusCode'] != 0:
             raise Exception(wait_body)
     except Exception as e:
-        container.kill()
+        try:
+            container.kill()
+        except:
+            pass
         raise e
-    print('compiling testcase {0} finished.'.format(case_name))
+    print('{0} - compile finish.'.format(case_name))
 
 def run_testcase(client: docker.DockerClient, code_path: str, input_path: str, output_path: str, type: str):
     case_name, extension_name = os.path.basename(code_path).split('.')
-    print(case_name, extension_name)
     container_name = 'compiler_{pid}_run_{type}_{name}'.format(pid=os.getpid(), type=type, name=case_name)
-    print('running testcase {0}'.format(case_name))
+    print('{0} - running'.format(case_name))
     if type == 'llvm':
         cmd = RUN_LLVM_CMD
     elif type == 'qemu':
@@ -70,8 +79,11 @@ def run_testcase(client: docker.DockerClient, code_path: str, input_path: str, o
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     }, auto_remove=True)
     try:
-        container.wait(timeout=10)
+        container.wait(timeout=TIMEOUT_SECONDS)
     except Exception as e:
-        container.kill()
+        try:
+            container.kill()
+        except:
+            pass
         raise e
-    print('run testcase {0} finished.'.format(case_name))
+    print('{0} - run finish.'.format(case_name))

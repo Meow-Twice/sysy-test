@@ -23,7 +23,8 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple # �
     "compiler-src": "path to your compiler source code",
     "compiler-build": "path to store build output of your compiler",
     "testcase-path": "path to testcase set",
-    "num-parallel": 8
+    "num-parallel": 8,
+    "timeout": 30
 }
 ```
 
@@ -33,6 +34,7 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple # �
 - `compiler-build`: 存放编译器的 `.class` 以及 `.jar` 的目录 (例如 Java 工程目录下的 `build` 目录)
 - `testcase-path`: 测试用例集的所在目录 (必须指定是功能用例集还是性能用例集，例如 `compiler-testcase/functional`，目录内只能是由 `.sy`, `.in` 和 `.out` 文件组成)
 - `num-parallel`: 并发测试的线程数量，根据主机的 CPU 核心数量来选定，即平均每个核心测试一个用例。
+- `timeout`: 超时时间，单位为秒，该参数可以缺省。
 
 以上三个路径均为**绝对路径**。
 

@@ -1,7 +1,11 @@
 import docker
 import os
 
-from const import TIMEOUT_SECONDS
+TIMEOUT_SECONDS = 10
+
+def set_timeout(secs: int):
+    global TIMEOUT_SECONDS
+    TIMEOUT_SECONDS = secs
 
 JAVA_IMAGE = 'openjdk:15-alpine'
 BUILD_COMPILER_CMD = '/bin/sh -c "javac -d target -encoding \'utf-8\' $(find src -name \'*.java\' -type f); \

@@ -1,6 +1,6 @@
 import docker
 from const import *
-from tasks import build_compiler, compile_testcase, run_testcase
+from tasks import set_timeout, build_compiler, compile_testcase, run_testcase
 from util import walk_testcase, answer_check, display_result
 from datetime import datetime
 import os, shutil
@@ -22,6 +22,10 @@ TESTCASE_PATH = config['testcase-path']
 NUM_PARALLEL = config['num-parallel']
 
 LOG_DIR_BASE = 'logs'
+
+# 超时时间
+if 'timeout' in config.keys():
+    set_timeout(config['timeout'])
 
 build_compiler(client, COMPILER_SRC_PATH, COMPILER_BUILD_PATH)
 
@@ -89,6 +93,8 @@ def test_one_case(testcase): # testcase is a tuple of (name, path_to_sy, path_to
 # 使用线程池运行测试点
 with ThreadPoolExecutor(max_workers=NUM_PARALLEL) as pool:
     pool.map(test_one_case, testcases)
-    
-with open(logDir + os.sep + 'results.html', 'w') as fp:
+
+timeNow = datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + "_" + str(os.getpid())
+
+with open(logDir + os.sep + 'result_' + timeNow + '.html', 'w') as fp:
     fp.write(display_result(results, title=logName))

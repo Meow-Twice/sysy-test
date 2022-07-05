@@ -12,6 +12,3 @@ verdict_name = {
     RUNTIME_ERROR: 'RUNTIME_ERROR',
     OTHER_ERROR: 'OTHER_ERROR',
 }
-
-# 超时时间
-TIMEOUT_SECONDS = 30

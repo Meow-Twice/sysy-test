@@ -1,7 +1,7 @@
 import os
 import html
 
-from const import verdict_name
+from const import verdict_name, ACCEPTED
 
 # 遍历测试点
 def walk_testcase(dir: str): # [(name, path_to_sy, path_to_in, path_to_out)]
@@ -31,6 +31,14 @@ def answer_check(ans_file: str, out_file: str): # (correct: bool, comment: str)
             return False, 'We got\n{0}\nWhen we expected\n{1}\nAt line {2}.'.format(out_line, ans_line, i + 1)
     return True, 'Correct!'
 
+# 折叠过长的输入输出
+def reduce_text(txt: str):
+    limit = 100
+    l = len(txt)
+    if l > limit:
+        return txt[:limit] + "<i>(... total {0} bytes)</i>".format(l)
+    return txt
+
 # 生成 HTML 评测结果
 def display_result(results: dict, title: str):
     # (name, verdict, comment, perf, stdin, stdout, answer)
@@ -38,7 +46,15 @@ def display_result(results: dict, title: str):
     for result in sorted(results, key=lambda r: r[0]):
         result_out = list(result)
         result_out[1] = verdict_name[result[1]]
-        table_rows.append("".join(['<td>{0}</td>'.format(html.escape(str(s)).replace('\n', '<br>')) for s in result_out]))
+        result_out = list(map(lambda s : html.escape(str(s)).replace('\n', '<br>'), result_out))
+        # 评测结果颜色
+        if result[1] == ACCEPTED:
+            result_out[1] = "<font color=\"green\">" + result_out[1] + "</font>"
+        else:
+            result_out[1] = "<font color=\"red\">" + result_out[1] + "</font>"
+        # 省略太长的输出
+        result_out[4:7] = map(reduce_text, result_out[4:7])
+        table_rows.append("".join(['<td>{0}</td>'.format(s) for s in result_out]))
     text = '''<html>
 <head>
 <title>{title}</title>

@@ -4,17 +4,19 @@ import html
 from const import verdict_name, ACCEPTED
 
 # 遍历测试点
-def walk_testcase(dir: str): # [(name, path_to_sy, path_to_in, path_to_out)]
-    _, _, files = os.walk(dir).__next__()
+def walk_testcase(baseDir: str, dirs: list): # [(series_name, case_name, path_to_sy, path_to_in, path_to_out)]
     testcase_list = []
-    for file in files:
-        if file.endswith('.sy'):
-            name = file.split('.')[0]
-            sy = os.path.realpath(dir + os.sep + file)
-            file_in = os.path.realpath(dir + os.sep + name + '.in')
-            file_out = os.path.realpath(dir + os.sep + name + '.out')
-            testcase_list.append((name, sy, file_in, file_out))
-    return sorted(testcase_list, key=lambda x : x[0])
+    for dir in dirs:
+        _, _, files = os.walk(os.path.join(baseDir, dir)).__next__()
+        for file in files:
+            file: str
+            if file.endswith('.sy'):
+                name = file.split('.')[0]
+                sy = os.path.realpath(os.path.join(baseDir, dir, file))
+                file_in = os.path.realpath(os.path.join(baseDir, dir, name + '.in'))
+                file_out = os.path.realpath(os.path.join(baseDir, dir, name + '.out'))
+                testcase_list.append((dir, name, sy, file_in, file_out))
+    return sorted(testcase_list, key=lambda x : (x[0], x[1]))
 
 # 答案检查
 def answer_check(ans_file: str, out_file: str): # (correct: bool, comment: str)
@@ -41,19 +43,19 @@ def reduce_text(txt: str):
 
 # 生成 HTML 评测结果
 def display_result(results: dict, title: str):
-    # (name, verdict, comment, perf, stdin, stdout, answer)
+    # (series, name, verdict, comment, perf, stdin, stdout, answer)
     table_rows = []
     for result in sorted(results, key=lambda r: r[0]):
         result_out = list(result)
-        result_out[1] = verdict_name[result[1]]
+        result_out[2] = verdict_name[result[2]]
         result_out = list(map(lambda s : html.escape(str(s)).replace('\n', '<br>'), result_out))
         # 评测结果颜色
-        if result[1] == ACCEPTED:
-            result_out[1] = "<font color=\"green\">" + result_out[1] + "</font>"
+        if result[2] == ACCEPTED:
+            result_out[2] = "<font color=\"green\">" + result_out[2] + "</font>"
         else:
-            result_out[1] = "<font color=\"red\">" + result_out[1] + "</font>"
+            result_out[2] = "<font color=\"red\">" + result_out[2] + "</font>"
         # 省略太长的输出
-        result_out[4:7] = map(reduce_text, result_out[4:7])
+        result_out[5:] = map(reduce_text, result_out[5:])
         table_rows.append("".join(['<td>{0}</td>'.format(s) for s in result_out]))
     text = '''<html>
 <head>
@@ -61,7 +63,7 @@ def display_result(results: dict, title: str):
 </head>
 <body>
 <table border="1">
-<tr> <th>name</th> <th>verdict</th> <th>comment</th> <th>perf</th> <th>stdin</th> <th>stdout</th> <th>answer</th> </tr>
+<tr> <th></th> <th>name</th> <th>verdict</th> <th>comment</th> <th>perf</th> <th>stdin</th> <th>stdout</th> <th>answer</th> </tr>
 {body}
 </table>
 </body>

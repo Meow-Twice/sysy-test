@@ -14,16 +14,13 @@ def SetJudgeType(type: str):
 # testcase is a tuple of (series_name, case_name, path_to_sy, path_to_in, path_to_out)
 def test_one_case(testcase: tuple): 
     global JudgeType
-    print(JudgeType)
     series_name, case_name, origin_sy, origin_in, origin_ans = testcase
-    print(testcase)
     full_name = os.path.join(series_name, case_name)
     print('{0} start.'.format(full_name))
 
     # Resolve dir and filenames
     workDir = os.path.join(logDir, series_name, case_name)
     outDir = os.path.join(workDir, 'output')
-    print(outDir)
     os.makedirs(workDir, mode=0o755, exist_ok=True)
     file_sy = os.path.join(workDir, case_name + '.sy')
     file_in = os.path.join(workDir, case_name + '.in')
@@ -38,7 +35,6 @@ def test_one_case(testcase: tuple):
     else:
         shutil.copy(origin_in, file_in)
     shutil.copy(origin_ans, file_ans)
-    print('333333333')
     # Compile Testcase
     if JudgeType == TYPE_PCODE:
         print('pcode test is not supported yet.')
@@ -72,7 +68,10 @@ def test_one_case(testcase: tuple):
             shutil.copy(os.path.join(outDir, 'output.txt'), file_out)
             shutil.copy(os.path.join(outDir, 'perf.txt'), file_perf)
         elif JudgeType == TYPE_QEMU:
-            run_testcase(DockerClient, series_name, case_name, file_code, file_in, outDir, 'qemu')
+            genelf_testcase(DockerClient, series_name, case_name, file_code, outDir)
+            file_elf = os.path.join(workDir, case_name + '.elf')
+            shutil.copy(os.path.join(outDir, 'test.elf'), file_elf)
+            run_testcase(DockerClient, series_name, case_name, file_elf, file_in, outDir, 'qemu')
             shutil.copy(os.path.join(outDir, 'output.txt'), file_out)
             shutil.copy(os.path.join(outDir, 'perf.txt'), file_perf)
         elif JudgeType == TYPE_RPI:

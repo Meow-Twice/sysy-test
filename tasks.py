@@ -25,12 +25,12 @@ CmdBuildCompiler = 'javac -d target -encoding \'utf-8\' $(find src -name \'*.jav
     jar -cvfm compiler.jar META-INF/MANIFEST.MF *'
 
 CmdCompileLLVM  = 'java -jar compiler.jar -emit-llvm -o test.ll test.sy; cp test.ll /output/'
-CmdCompileARM   = 'java -jar compiler.jar -S -o test.S test.sy; cp test.ll /output/'
+CmdCompileARM   = 'java -jar compiler.jar -S -o test.S test.sy; cp test.S /output/'
 
 CmdCompileAndRunPcode = 'java -jar compiler.jar -pcode test.S < input.txt >output.txt 2>perf.txt; cp perf.txt /output/; cp output.txt /output/'
 
 SysyImage = "sysy:latest"
-CmdGenElf = 'sysy-elf.sh test.S; cp test.elf /output/'
+CmdGenElf = 'sysy-elf.sh test.S 2>err.txt; cp err.txt /output/; cp test.elf /output/'
 
 CmdRunLLVM = 'sysy-run-llvm.sh test.ll <input.txt >output.txt 2>perf.txt; \
     echo $? >> exit.txt; cp perf.txt /output/; \
@@ -73,7 +73,9 @@ def compile_testcase(client: docker.DockerClient, series_name: str, case_name: s
 def genelf_testcase(client: docker.DockerClient, series_name: str, case_name: str, code_path: str, output_path: str):
     fullname = os.path.join(series_name, case_name)
     container_name = 'compiler_{pid}_genelf_{series}_{name}'.format(pid=os.getpid(), series=series_name, name=case_name)
+    print(code_path)
     assert code_path.endswith('.S')
+    print('{0} - elf generate begin'.format(fullname))
     container: Container = client.containers.run(image=SysyImage, command=wrap_cmd(CmdGenElf), detach=True, name=container_name, working_dir='/compiler', volumes={
         os.path.realpath(code_path): {'bind': '/compiler/test.S', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}

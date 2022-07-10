@@ -27,7 +27,8 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple # �
     "num-parallel": 8,
     "timeout": 60,
     "rebuild": true,
-    "run-type": "llvm"
+    "run-type": "llvm",
+    "rpi-address": "http://192.168.1.2:8080"
 }
 ```
 
@@ -46,6 +47,7 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple # �
   - `rpi`: 目标代码为 arm 汇编，通过 API 在树莓派上链接生成 ELF 并运行
   - `rpi-elf`: 目标代码为 arm 汇编，用交叉编译器生成 ELF 并通过 API 在树莓派上执行
   - `pcode`: 由编译器接收 stdin 输入，直接解释执行代码并通过 stdout 给出输出
+- `rpi-address`: 树莓派的地址 (API HTTP 地址)
 
 以上三个路径均为**绝对路径**。
 

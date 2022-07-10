@@ -73,7 +73,6 @@ def compile_testcase(client: docker.DockerClient, series_name: str, case_name: s
 def genelf_testcase(client: docker.DockerClient, series_name: str, case_name: str, code_path: str, output_path: str):
     fullname = os.path.join(series_name, case_name)
     container_name = 'compiler_{pid}_genelf_{series}_{name}'.format(pid=os.getpid(), series=series_name, name=case_name)
-    print(code_path)
     assert code_path.endswith('.S')
     print('{0} - elf generate begin'.format(fullname))
     container: Container = client.containers.run(image=SysyImage, command=wrap_cmd(CmdGenElf), detach=True, name=container_name, working_dir='/compiler', volumes={

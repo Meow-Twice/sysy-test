@@ -60,7 +60,7 @@ def test_one_case(testcase: tuple):
     else:
         file_code = os.path.join(workDir, case_name + '.S') # ARM
         shutil.copy(os.path.join(outDir, 'test.S'), file_code)
-    
+    print('{0} compiled.'.format(full_name))
     # Run target code
     try:
         if JudgeType == TYPE_LLVM:
@@ -77,7 +77,7 @@ def test_one_case(testcase: tuple):
         elif JudgeType == TYPE_RPI:
             SubmitAndWait((full_name, file_code, file_in, file_out, file_perf, False))
         elif JudgeType == TYPE_RPI_ELF:
-            genelf_testcase(DockerClient, series_name, case_name, file_sy, outDir)
+            genelf_testcase(DockerClient, series_name, case_name, file_code, outDir)
             file_elf = os.path.join(workDir, case_name + '.elf')
             shutil.copy(os.path.join(outDir, 'test.elf'), file_elf)
             SubmitAndWait((full_name, file_elf, file_in, file_out, file_perf, True))
@@ -90,7 +90,7 @@ def test_one_case(testcase: tuple):
         results.append((series_name, case_name, verdict, comment, '', '', '', ''))
         print('Testcase {0} RUNTIME_ERROR with {1}'.format(full_name, comment))
         return
-    
+    print('{0} executed.'.format(full_name))
     # Read result and check
     with open(file_perf, 'r') as fp:
         perf_text = fp.read()

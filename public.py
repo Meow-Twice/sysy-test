@@ -24,6 +24,8 @@ NumParallel = config['num-parallel']
 RebuildCompiler = config['rebuild-compiler']
 RunType = config['run-type']
 
+RpiAddress = config['rpi-address']
+
 LogDirBase = 'logs'
 
 TimeoutSecs = 60

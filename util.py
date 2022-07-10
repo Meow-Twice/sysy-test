@@ -45,7 +45,7 @@ def reduce_text(txt: str):
 def display_result(results: dict, title: str):
     # (series, name, verdict, comment, perf, stdin, stdout, answer)
     table_rows = []
-    for result in sorted(results, key=lambda r: r[0]):
+    for result in sorted(results, key=lambda r: (r[0], r[1])):
         result_out = list(result)
         result_out[2] = verdict_name[result[2]]
         result_out = list(map(lambda s : html.escape(str(s)).replace('\n', '<br>'), result_out))

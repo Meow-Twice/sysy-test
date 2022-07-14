@@ -3,18 +3,15 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
 from const import *
-from util import walk_testcase, display_result
 from public import *
+from util import walk_testcase, display_result
 from tasks import build_compiler
-from judge import *
-from rpi import *
+from judge import test_one_case
 
 if RebuildCompiler:
     build_compiler(DockerClient, CompilerSrc, CompilerBuild)
 
 testcases = walk_testcase(TestcaseBaseDir, TestcaseSelect)
-SetJudgeType(RunType)
-SetRpiAddress(RpiAddress)
 
 # 使用线程池运行测试点
 with ThreadPoolExecutor(max_workers=NumParallel) as pool:

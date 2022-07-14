@@ -35,7 +35,7 @@ CmdCompileLLVM  = 'java -jar compiler.jar -emit-llvm -o test.ll test.sy; cp test
 CmdCompileARM   = 'java -jar compiler.jar -S -o test.S test.sy; cp test.S /output/; \
     [ -e test.S ]'
 
-CmdCompileAndRunPcode = 'java -jar compiler.jar -pcode test.S < input.txt >output.txt 2>perf.txt; cp perf.txt /output/; cp output.txt /output/'
+CmdCompileAndRunInterpreter = 'java -jar compiler.jar -I test.S < input.txt >output.txt 2>perf.txt; cp perf.txt /output/; cp output.txt /output/'
 
 SysyImage = "sysy:latest"
 CmdGenElf = 'arm-linux-gnueabihf-gcc -march=armv7 --static -o test.elf test.S /usr/share/sylib/sylib.a 2>err.txt; cp err.txt /output/; \
@@ -110,12 +110,12 @@ def run_testcase(client: docker.DockerClient, series_name: str, case_name: str, 
     container_wait(container)
     print('{0} - run finish.'.format(fullname))
 
-def run_pcode(client: docker.DockerClient, series_name: str, case_name: str, compiler_path: str, sy_path: str, input_path: str, output_path: str):
+def run_interpreter(client: docker.DockerClient, series_name: str, case_name: str, compiler_path: str, sy_path: str, input_path: str, output_path: str):
     _, extension_name = os.path.basename(sy_path).split('.')
     assert extension_name == '.sy'
     container_name = 'compiler_{pid}_pcode_{series}_{name}'.format(pid=os.getpid(), series_name=series_name, name=case_name)
     print('{0} - pcode begin.'.format(case_name))
-    container: Container = client.containers.run(image=JavaImage, command=wrap_cmd(CmdCompileAndRunPcode), detach=True, name=container_name, working_dir='/compiler', volumes={
+    container: Container = client.containers.run(image=JavaImage, command=wrap_cmd(CmdCompileAndRunInterpreter), detach=True, name=container_name, working_dir='/compiler', volumes={
         os.path.realpath(compiler_path): {'bind': '/compiler/compiler.jar', 'mode': 'ro'},
         os.path.realpath(sy_path): {'bind': '/compiler/test.sy', 'mode': 'ro'},
         os.path.realpath(input_path): {'bind': '/compiler/input.txt', 'mode': 'ro'},

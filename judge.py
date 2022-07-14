@@ -1,19 +1,16 @@
 import os, shutil
-from tasks import compile_testcase, genelf_testcase, run_testcase
-from util import answer_check
-from public import logDir, DockerClient, CompilerPath, results
+
 from const import *
-from rpi import SubmitAndWait
+from tasks import compile_testcase, genelf_testcase, run_interpreter, run_testcase
+from util import answer_check
+from public import logDir, DockerClient, CompilerPath, RunType, results
+from rpi import submit_to_pi_and_wait
 
-JudgeType = ''
-
-def SetJudgeType(type: str):
-    global JudgeType
-    JudgeType = type
+judge_type = RunType
 
 # testcase is a tuple of (series_name, case_name, path_to_sy, path_to_in, path_to_out)
 def test_one_case(testcase: tuple): 
-    global JudgeType
+    global judge_type
     series_name, case_name, origin_sy, origin_in, origin_ans = testcase
     full_name = os.path.join(series_name, case_name)
     print('{0} start.'.format(full_name))
@@ -36,60 +33,69 @@ def test_one_case(testcase: tuple):
         shutil.copy(origin_in, file_in)
     shutil.copy(origin_ans, file_ans)
     # Compile Testcase
-    if JudgeType == TYPE_PCODE:
-        print('pcode test is not supported yet.')
-        return
-    try:
-        if JudgeType == TYPE_LLVM:
-            compile_testcase(DockerClient, series_name, case_name, CompilerPath, file_sy, outDir, 'llvm')
-        elif JudgeType == TYPE_QEMU or JudgeType == TYPE_RPI or JudgeType == TYPE_RPI_ELF:
-            compile_testcase(DockerClient, series_name, case_name, CompilerPath, file_sy, outDir, 'arm')
-        else:
-            print('Not Supported Judge Type: {0}'.format(JudgeType))
+    if judge_type == TYPE_PCODE:
+        try:
+            run_interpreter(DockerClient, series_name, case_name, CompilerPath, file_sy, file_in, outDir)
+            shutil.copy(os.path.join(outDir, 'output.txt'), file_out)
+            shutil.copy(os.path.join(outDir, 'perf.txt'), file_perf)
+        except Exception as e:
+            verdict = RUNTIME_ERROR
+            comment = str(e)
+            results.append((series_name, case_name, verdict, comment, '', '', '', ''))
+            print('Testcase {0} Interpret Error with {1}'.format(full_name, comment))
             return
-    except Exception as e:
-        verdict = RUNTIME_ERROR
-        comment = str(e)
-        results.append((series_name, case_name, verdict, comment, '', '', '', ''))
-        print('Testcase {0} COMPILE_ERROR with {1}'.format(full_name, comment))
-        return
-    # Get compiled target of testcase
-    if JudgeType == TYPE_LLVM:
-        file_code = os.path.join(workDir, case_name + '.ll') # LLVM
-        shutil.copy(os.path.join(outDir, 'test.ll'), file_code)
     else:
-        file_code = os.path.join(workDir, case_name + '.S') # ARM
-        shutil.copy(os.path.join(outDir, 'test.S'), file_code)
-    print('{0} compiled.'.format(full_name))
-    # Run target code
-    try:
-        if JudgeType == TYPE_LLVM:
-            run_testcase(DockerClient, series_name, case_name, file_code, file_in, outDir, 'llvm')
-            shutil.copy(os.path.join(outDir, 'output.txt'), file_out)
-            shutil.copy(os.path.join(outDir, 'perf.txt'), file_perf)
-        elif JudgeType == TYPE_QEMU:
-            genelf_testcase(DockerClient, series_name, case_name, file_code, outDir)
-            file_elf = os.path.join(workDir, case_name + '.elf')
-            shutil.copy(os.path.join(outDir, 'test.elf'), file_elf)
-            run_testcase(DockerClient, series_name, case_name, file_elf, file_in, outDir, 'qemu')
-            shutil.copy(os.path.join(outDir, 'output.txt'), file_out)
-            shutil.copy(os.path.join(outDir, 'perf.txt'), file_perf)
-        elif JudgeType == TYPE_RPI:
-            SubmitAndWait((full_name, file_code, file_in, file_out, file_perf, False))
-        elif JudgeType == TYPE_RPI_ELF:
-            genelf_testcase(DockerClient, series_name, case_name, file_code, outDir)
-            file_elf = os.path.join(workDir, case_name + '.elf')
-            shutil.copy(os.path.join(outDir, 'test.elf'), file_elf)
-            SubmitAndWait((full_name, file_elf, file_in, file_out, file_perf, True))
-        else:
-            print('Not Supported Judge Type: {0}'.format(JudgeType))
+        try:
+            if judge_type == TYPE_LLVM:
+                compile_testcase(DockerClient, series_name, case_name, CompilerPath, file_sy, outDir, 'llvm')
+            elif judge_type == TYPE_QEMU or judge_type == TYPE_RPI or judge_type == TYPE_RPI_ELF:
+                compile_testcase(DockerClient, series_name, case_name, CompilerPath, file_sy, outDir, 'arm')
+            else:
+                print('Not Supported Judge Type: {0}'.format(judge_type))
+                return
+        except Exception as e:
+            verdict = RUNTIME_ERROR
+            comment = str(e)
+            results.append((series_name, case_name, verdict, comment, '', '', '', ''))
+            print('Testcase {0} COMPILE_ERROR with {1}'.format(full_name, comment))
             return
-    except Exception as e:
-        verdict = RUNTIME_ERROR
-        comment = str(e)
-        results.append((series_name, case_name, verdict, comment, '', '', '', ''))
-        print('Testcase {0} RUNTIME_ERROR with {1}'.format(full_name, comment))
-        return
+        # Get compiled target of testcase
+        if judge_type == TYPE_LLVM:
+            file_code = os.path.join(workDir, case_name + '.ll') # LLVM
+            shutil.copy(os.path.join(outDir, 'test.ll'), file_code)
+        else:
+            file_code = os.path.join(workDir, case_name + '.S') # ARM
+            shutil.copy(os.path.join(outDir, 'test.S'), file_code)
+        print('{0} compiled.'.format(full_name))
+        # Run target code
+        try:
+            if judge_type == TYPE_LLVM:
+                run_testcase(DockerClient, series_name, case_name, file_code, file_in, outDir, 'llvm')
+                shutil.copy(os.path.join(outDir, 'output.txt'), file_out)
+                shutil.copy(os.path.join(outDir, 'perf.txt'), file_perf)
+            elif judge_type == TYPE_QEMU:
+                genelf_testcase(DockerClient, series_name, case_name, file_code, outDir)
+                file_elf = os.path.join(workDir, case_name + '.elf')
+                shutil.copy(os.path.join(outDir, 'test.elf'), file_elf)
+                run_testcase(DockerClient, series_name, case_name, file_elf, file_in, outDir, 'qemu')
+                shutil.copy(os.path.join(outDir, 'output.txt'), file_out)
+                shutil.copy(os.path.join(outDir, 'perf.txt'), file_perf)
+            elif judge_type == TYPE_RPI:
+                submit_to_pi_and_wait((full_name, file_code, file_in, file_out, file_perf, False))
+            elif judge_type == TYPE_RPI_ELF:
+                genelf_testcase(DockerClient, series_name, case_name, file_code, outDir)
+                file_elf = os.path.join(workDir, case_name + '.elf')
+                shutil.copy(os.path.join(outDir, 'test.elf'), file_elf)
+                submit_to_pi_and_wait((full_name, file_elf, file_in, file_out, file_perf, True))
+            else:
+                print('Not Supported Judge Type: {0}'.format(judge_type))
+                return
+        except Exception as e:
+            verdict = RUNTIME_ERROR
+            comment = str(e)
+            results.append((series_name, case_name, verdict, comment, '', '', '', ''))
+            print('Testcase {0} RUNTIME_ERROR with {1}'.format(full_name, comment))
+            return
     print('{0} executed.'.format(full_name))
     # Read result and check
     with open(file_perf, 'r') as fp:

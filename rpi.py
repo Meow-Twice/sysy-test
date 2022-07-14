@@ -2,11 +2,9 @@ import requests
 from urllib import parse
 from concurrent.futures import ThreadPoolExecutor
 
-pi_address = ""
+from public import RpiAddress
 
-def SetRpiAddress(addr: str):
-    global pi_address
-    pi_address = addr
+pi_address = RpiAddress
 
 API_UPLOAD_ELF = "/elf"
 API_UPLOAD_ASM = "/asm"
@@ -43,7 +41,7 @@ def run_testcase_on_pi(case_name: str, target_file: str, input_file: str, output
 Executor = ThreadPoolExecutor(max_workers=1)    # Only 1 thread can use pi
 
 # req: (case_name, target_file, input_file, output_file, perf_file, is_elf)
-def SubmitAndWait(req: tuple):
+def submit_to_pi_and_wait(req: tuple):
     def wrapper(req):
         try:
             run_testcase_on_pi(req[0], req[1], req[2], req[3], req[4], req[5])

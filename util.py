@@ -43,15 +43,15 @@ def reduce_text(txt: str):
     return txt
 
 # 生成 HTML 评测结果
-def display_result(results: dict, title: str):
+def display_result(results: list, title: str):
     # (series, name, verdict, comment, perf, stdin, stdout, answer)
     table_rows = []
-    for result in sorted(results, key=lambda r: (r[0], r[1])):
-        result_out = list(result)
-        result_out[2] = verdict_name[result[2]]
+    for result in sorted(results, key=lambda r: (r['series_name'], r['case_name'])):
+        result_out = [result[k] for k in ['series_name', 'case_name', 'verdict', 'comment', 'perf', 'stdin', 'stdout', 'answer']]
+        result_out[2] = verdict_name[result['verdict']] # verdict
         result_out = list(map(lambda s : html.escape(str(s)).replace('\n', '<br>'), result_out))
         # 评测结果颜色
-        if result[2] == ACCEPTED:
+        if result['verdict'] == ACCEPTED:
             result_out[2] = "<font color=\"green\">" + result_out[2] + "</font>"
         else:
             result_out[2] = "<font color=\"red\">" + result_out[2] + "</font>"
@@ -64,7 +64,7 @@ def display_result(results: dict, title: str):
 </head>
 <body>
 <table border="1">
-<tr> <th></th> <th>name</th> <th>verdict</th> <th>comment</th> <th>perf</th> <th>stdin</th> <th>stdout</th> <th>answer</th> </tr>
+<tr> <th>series</th> <th>name</th> <th>verdict</th> <th>comment</th> <th>perf</th> <th>stdin</th> <th>stdout</th> <th>answer</th> </tr>
 {body}
 </table>
 </body>

@@ -1,4 +1,4 @@
-import os
+import os, json
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
@@ -20,5 +20,8 @@ with ThreadPoolExecutor(max_workers=NumParallel) as pool:
 
 timeNow = datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + "_" + str(os.getpid())
 
-with open(logDir + os.sep + 'result_' + timeNow + '.html', 'w') as fp:
+with open(os.path.join(logDir, 'result_' + timeNow + '.html'), 'w') as fp:
     fp.write(display_result(results, title=logName))
+
+with open(os.path.join(logDir, 'result_' + timeNow + '.json'), 'w') as fp:
+    json.dump(results, fp=fp)

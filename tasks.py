@@ -9,13 +9,19 @@ def wrap_cmd(cmd: str) -> str:
 
 def container_wait(container: Container):
     try:
-        container.wait(timeout=TimeoutSecs)
+        exit_code = container.wait(timeout=TimeoutSecs)
     except Exception as e:
         try:
             container.kill()
+            container.remove()
         except:
             pass
         raise e
+    if exit_code['StatusCode'] != 0:
+        logs = str(container.logs())
+        container.remove()
+        raise Exception('container exit with code {0}\n{1}'.format(exit_code, logs))
+    container.remove()
 
 JavaImage = 'openjdk:15-alpine'
 
@@ -24,13 +30,16 @@ CmdBuildCompiler = 'javac -d target -encoding \'utf-8\' $(find src -name \'*.jav
     echo -e \'Manifest-Version: 1.0\\r\\nMain-Class: Compiler\\r\\n\\r\\n\' > META-INF/MANIFEST.MF; \
     jar -cvfm compiler.jar META-INF/MANIFEST.MF *'
 
-CmdCompileLLVM  = 'java -jar compiler.jar -emit-llvm -o test.ll test.sy; cp test.ll /output/'
-CmdCompileARM   = 'java -jar compiler.jar -S -o test.S test.sy; cp test.S /output/'
+CmdCompileLLVM  = 'java -jar compiler.jar -emit-llvm -o test.ll test.sy; cp test.ll /output/; \
+    [ -e test.ll ]'
+CmdCompileARM   = 'java -jar compiler.jar -S -o test.S test.sy; cp test.S /output/; \
+    [ -e test.S ]'
 
 CmdCompileAndRunPcode = 'java -jar compiler.jar -pcode test.S < input.txt >output.txt 2>perf.txt; cp perf.txt /output/; cp output.txt /output/'
 
 SysyImage = "sysy:latest"
-CmdGenElf = 'sysy-elf.sh test.S 2>err.txt; cp err.txt /output/; cp test.elf /output/'
+CmdGenElf = 'arm-linux-gnueabihf-gcc -march=armv7 --static -o test.elf test.S /usr/share/sylib/sylib.a 2>err.txt; cp err.txt /output/; \
+    if [ -e test.elf ]; then cp test.elf /output/; else false; fi'
 
 CmdRunLLVM = 'sysy-run-llvm.sh test.ll <input.txt >output.txt 2>perf.txt; \
     echo $? >> exit.txt; cp perf.txt /output/; \
@@ -48,7 +57,7 @@ def build_compiler(client: docker.DockerClient, source_path: str, artifact_path:
     container: Container = client.containers.run(JavaImage, command=wrap_cmd(CmdBuildCompiler), detach=True, name=container_name, working_dir='/project', volumes={
         os.path.realpath(source_path): {'bind': '/project/src', 'mode': 'ro'},
         os.path.realpath(artifact_path): {'bind': '/project/target', 'mode': 'rw'}
-    }, auto_remove=True)
+    })
     container_wait(container)
     print('compiler build finished.')
 
@@ -66,7 +75,7 @@ def compile_testcase(client: docker.DockerClient, series_name: str, case_name: s
         os.path.realpath(compiler_path): {'bind': '/compiler/compiler.jar', 'mode': 'ro'},
         os.path.realpath(sy_path): {'bind': '/compiler/test.sy', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
-    }, auto_remove=True)
+    })
     container_wait(container)
     print('{0} - compile finish.'.format(fullname))
 
@@ -78,7 +87,7 @@ def genelf_testcase(client: docker.DockerClient, series_name: str, case_name: st
     container: Container = client.containers.run(image=SysyImage, command=wrap_cmd(CmdGenElf), detach=True, name=container_name, working_dir='/compiler', volumes={
         os.path.realpath(code_path): {'bind': '/compiler/test.S', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
-    }, auto_remove=True)
+    })
     container_wait(container)
     print('{0} - elf generated.'.format(fullname))
 
@@ -97,7 +106,7 @@ def run_testcase(client: docker.DockerClient, series_name: str, case_name: str, 
         os.path.realpath(code_path): {'bind': '/compiler/test.' + extension_name, 'mode': 'ro'},
         os.path.realpath(input_path): {'bind': '/compiler/input.txt', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
-    }, auto_remove=True)
+    })
     container_wait(container)
     print('{0} - run finish.'.format(fullname))
 
@@ -111,6 +120,6 @@ def run_pcode(client: docker.DockerClient, series_name: str, case_name: str, com
         os.path.realpath(sy_path): {'bind': '/compiler/test.sy', 'mode': 'ro'},
         os.path.realpath(input_path): {'bind': '/compiler/input.txt', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
-    }, auto_remove=True)
+    })
     container_wait(container)
     print('{0} - pcode done.'.format(case_name))

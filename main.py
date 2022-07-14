@@ -4,12 +4,13 @@ from concurrent.futures import ThreadPoolExecutor
 
 from const import *
 from public import *
-from util import walk_testcase, display_result
+from util import walk_testcase, display_result, archive_source
 from tasks import build_compiler
 from judge import test_one_case
 
 if RebuildCompiler:
     build_compiler(DockerClient, CompilerSrc, CompilerBuild)
+    archive_source(CompilerSrc, os.path.join(logDir, "src.tar.gz"))
 
 testcases = walk_testcase(TestcaseBaseDir, TestcaseSelect)
 

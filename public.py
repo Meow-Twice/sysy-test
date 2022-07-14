@@ -24,7 +24,9 @@ NumParallel = config['num-parallel']
 RebuildCompiler = config['rebuild-compiler']
 RunType = config['run-type']
 
-RpiAddress = config['rpi-address']
+RpiAddress = ""
+if 'rpi-address' in config.keys():
+    RpiAddress = config['rpi-address']
 
 LogDirBase = 'logs'
 

@@ -33,7 +33,7 @@ def test_one_case(testcase: tuple):
         shutil.copy(origin_in, file_in)
     shutil.copy(origin_ans, file_ans)
     # Compile Testcase
-    if judge_type == TYPE_PCODE:
+    if judge_type == TYPE_INTERPRET:
         try:
             run_interpreter(DockerClient, series_name, case_name, CompilerPath, file_sy, file_in, outDir)
             shutil.copy(os.path.join(outDir, 'output.txt'), file_out)

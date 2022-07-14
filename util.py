@@ -1,5 +1,6 @@
 import os
 import html
+import tarfile
 
 from const import verdict_name, ACCEPTED
 
@@ -69,3 +70,7 @@ def display_result(results: dict, title: str):
 </body>
 </html>'''.format(title=title, body="\n".join(['<tr>{0}</tr>'.format(s) for s in table_rows]))
     return text
+
+def archive_source(src_dir: str, dst_file: str):
+    with tarfile.open(dst_file, "w:gz") as tar:
+        tar.add(src_dir, arcname=os.path.basename(src_dir))

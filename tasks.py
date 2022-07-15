@@ -13,9 +13,9 @@ def container_wait(container: Container):
     except Exception as e:
         try:
             container.kill()
-            container.remove()
         except:
             pass
+        container.remove()
         raise e
     if exit_code['StatusCode'] != 0:
         logs = str(container.logs())

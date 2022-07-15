@@ -66,4 +66,12 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple # �
 
 完成上述所有准备工作后，在激活虚拟环境后执行 `python3 -u main.py` 即可开始测试。测试结果位于 `logs` 目录中。
 
-如果使用的配置文件不是 `config.json` ，则需将配置文件作为第一个命令行参数传入，示例: `python3 -u main.py config-custom.json`
+如果使用的配置文件不是 `config.json` ，则需将配置文件作为第一个命令行参数传入，示例: `python3 -u main.py config-custom.json` 。
+
+## 评测结果
+
+结果默认保存在当前目录的 `logs` 文件夹，每次运行脚本生成一份评测记录，每份记录一个文件夹，名称格式为 "启动时间+进程号"。一份评测记录内包含：
+
+- html 和 json 格式的评测结果摘要
+- 如果 `rebuild-compiler` 参数为 `true` ，则保存一份压缩的编译器源代码
+- 按测试集和测试用例划分的，每个用例一个目录，含有测试用例的源程序、标准输入、期望输出、编译结果、运行输出等

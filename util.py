@@ -44,6 +44,9 @@ def reduce_text(txt: str):
 
 # 生成 HTML 评测结果
 def display_result(results: list, title: str):
+    total_cases = len(results)
+    passed_cases = len(list(filter(lambda x : x['verdict'] == ACCEPTED, results)))
+    summary = 'Total {0} testcases, passed {1}.'.format(total_cases, passed_cases)
     # (series, name, verdict, comment, perf, stdin, stdout, answer)
     table_rows = []
     for result in sorted(results, key=lambda r: (r['series_name'], r['case_name'])):
@@ -56,19 +59,20 @@ def display_result(results: list, title: str):
         else:
             result_out[2] = "<font color=\"red\">" + result_out[2] + "</font>"
         # 省略太长的输出
-        result_out[5:] = map(reduce_text, result_out[5:])
+        result_out[4:] = map(reduce_text, result_out[4:])
         table_rows.append("".join(['<td>{0}</td>'.format(s) for s in result_out]))
     text = '''<html>
 <head>
 <title>{title}</title>
 </head>
 <body>
+<p>{summary}</p>
 <table border="1">
 <tr> <th>series</th> <th>name</th> <th>verdict</th> <th>comment</th> <th>perf</th> <th>stdin</th> <th>stdout</th> <th>answer</th> </tr>
 {body}
 </table>
 </body>
-</html>'''.format(title=title, body="\n".join(['<tr>{0}</tr>'.format(s) for s in table_rows]))
+</html>'''.format(title=title, summary=summary, body="\n".join(['<tr>{0}</tr>'.format(s) for s in table_rows]))
     return text
 
 def archive_source(src_dir: str, dst_file: str):

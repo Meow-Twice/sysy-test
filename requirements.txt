@@ -5,3 +5,4 @@ idna
 requests
 urllib3
 websocket-client
+prettytable

@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from const import *
 from public import *
-from util import walk_testcase, display_result, archive_source
+from util import print_result, walk_testcase, display_result, archive_source
 from tasks import build_compiler
 from judge import test_one_case
 
@@ -27,3 +27,5 @@ with open(os.path.join(logDir, 'result_' + timeNow + '.html'), 'w') as fp:
 
 with open(os.path.join(logDir, 'result_' + timeNow + '.json'), 'w') as fp:
     json.dump(results, fp=fp)
+
+print_result(results)

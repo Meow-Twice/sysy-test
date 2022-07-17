@@ -1,6 +1,7 @@
 import os
 import html
 import tarfile
+import prettytable
 
 from const import verdict_name, ACCEPTED
 
@@ -42,11 +43,15 @@ def reduce_text(txt: str):
         return txt[:limit] + "<i>(... total {0} bytes)</i>".format(l)
     return txt
 
-# 生成 HTML 评测结果
-def display_result(results: list, title: str):
+def get_summary(results: list) -> str:
     total_cases = len(results)
     passed_cases = len(list(filter(lambda x : x['verdict'] == ACCEPTED, results)))
     summary = 'Total {0} testcases, passed {1}.'.format(total_cases, passed_cases)
+    return summary
+
+# 生成 HTML 评测结果
+def display_result(results: list, title: str):
+    summary = get_summary(results)
     # (series, name, verdict, comment, perf, stdin, stdout, answer)
     table_rows = []
     for result in sorted(results, key=lambda r: (r['series_name'], r['case_name'])):
@@ -74,6 +79,14 @@ def display_result(results: list, title: str):
 </body>
 </html>'''.format(title=title, summary=summary, body="\n".join(['<tr>{0}</tr>'.format(s) for s in table_rows]))
     return text
+
+def print_result(results: list):
+    table = prettytable.PrettyTable(field_names=['series', 'case_name', 'verdict', 'comment', 'perf'])
+    for r in sorted(results, key=lambda r: (r['series_name'], r['case_name'])):
+        table.add_row((r['series_name'], r['case_name'], verdict_name[r['verdict']], r['comment'], reduce_text(r['perf'])))
+    print(table)
+    summary = get_summary(results)
+    print(summary)
 
 def archive_source(src_dir: str, dst_file: str):
     with tarfile.open(dst_file, "w:gz") as tar:

@@ -10,6 +10,8 @@ from judge import test_one_case
 
 if RebuildCompiler:
     build_compiler(DockerClient, CompilerSrc, CompilerBuild)
+
+if CacheSource:
     archive_source(CompilerSrc, os.path.join(logDir, "src.tar.gz"))
 
 testcases = walk_testcase(TestcaseBaseDir, TestcaseSelect)

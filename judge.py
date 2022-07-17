@@ -3,7 +3,7 @@ import os, shutil
 from const import *
 from tasks import compile_testcase, genelf_testcase, run_interpreter, run_testcase
 from util import answer_check
-from public import logDir, DockerClient, CompilerPath, RunType, results
+from public import logDir, logDirHost, DockerClient, CompilerPath, RunType, results
 from rpi import submit_to_pi_and_wait
 
 judge_type = RunType
@@ -18,12 +18,15 @@ def test_one_case(testcase: tuple):
     # Resolve dir and filenames
     workDir = os.path.join(logDir, series_name, case_name)
     outDir = os.path.join(workDir, 'output')
+    # dirs on host (pass to docker -v)
+    workDirHost = os.path.join(logDirHost, series_name, case_name)
+    outDirHost = os.path.join(workDirHost, 'output')
     os.makedirs(workDir, mode=0o755, exist_ok=True)
-    file_sy = os.path.join(workDir, case_name + '.sy')
-    file_in = os.path.join(workDir, case_name + '.in')
-    file_ans = os.path.join(workDir, case_name + '.out')
-    file_out = os.path.join(workDir, 'output.txt')
-    file_perf = os.path.join(workDir, 'perf.txt')
+    file_sy, file_host_sy   = os.path.join(workDir, case_name + '.sy'), os.path.join(workDirHost, case_name + '.sy')
+    file_in, file_host_in   = os.path.join(workDir, case_name + '.in'), os.path.join(workDirHost, case_name + '.in')
+    file_ans    = os.path.join(workDir, case_name + '.out')
+    file_out    = os.path.join(workDir, 'output.txt')
+    file_perf   = os.path.join(workDir, 'perf.txt')
 
     # Prepare given files
     shutil.copy(origin_sy, file_sy)
@@ -35,7 +38,7 @@ def test_one_case(testcase: tuple):
     # Compile Testcase
     if judge_type == TYPE_INTERPRET:
         try:
-            run_interpreter(DockerClient, series_name, case_name, CompilerPath, file_sy, file_in, outDir)
+            run_interpreter(DockerClient, series_name, case_name, CompilerPath, file_host_sy, file_host_in, outDirHost)
             shutil.copy(os.path.join(outDir, 'output.txt'), file_out)
             shutil.copy(os.path.join(outDir, 'perf.txt'), file_perf)
         except Exception as e:
@@ -47,9 +50,9 @@ def test_one_case(testcase: tuple):
     else:
         try:
             if judge_type == TYPE_LLVM:
-                compile_testcase(DockerClient, series_name, case_name, CompilerPath, file_sy, outDir, 'llvm')
+                compile_testcase(DockerClient, series_name, case_name, CompilerPath, file_host_sy, outDirHost, 'llvm')
             elif judge_type == TYPE_QEMU or judge_type == TYPE_RPI or judge_type == TYPE_RPI_ELF:
-                compile_testcase(DockerClient, series_name, case_name, CompilerPath, file_sy, outDir, 'arm')
+                compile_testcase(DockerClient, series_name, case_name, CompilerPath, file_host_sy, outDirHost, 'arm')
             else:
                 print('Not Supported Judge Type: {0}'.format(judge_type))
                 return
@@ -62,28 +65,31 @@ def test_one_case(testcase: tuple):
         # Get compiled target of testcase
         if judge_type == TYPE_LLVM:
             file_code = os.path.join(workDir, case_name + '.ll') # LLVM
+            file_host_code = os.path.join(workDirHost, case_name + '.ll')
             shutil.copy(os.path.join(outDir, 'test.ll'), file_code)
         else:
             file_code = os.path.join(workDir, case_name + '.S') # ARM
+            file_host_code = os.path.join(workDirHost, case_name + '.S')
             shutil.copy(os.path.join(outDir, 'test.S'), file_code)
         print('{0} compiled.'.format(full_name))
         # Run target code
         try:
             if judge_type == TYPE_LLVM:
-                run_testcase(DockerClient, series_name, case_name, file_code, file_in, outDir, 'llvm')
+                run_testcase(DockerClient, series_name, case_name, file_host_code, file_host_in, outDirHost, 'llvm')
                 shutil.copy(os.path.join(outDir, 'output.txt'), file_out)
                 shutil.copy(os.path.join(outDir, 'perf.txt'), file_perf)
             elif judge_type == TYPE_QEMU:
-                genelf_testcase(DockerClient, series_name, case_name, file_code, outDir)
+                genelf_testcase(DockerClient, series_name, case_name, file_host_code, outDirHost)
                 file_elf = os.path.join(workDir, case_name + '.elf')
+                file_host_elf = os.path.join(workDirHost, case_name + '.elf')
                 shutil.copy(os.path.join(outDir, 'test.elf'), file_elf)
-                run_testcase(DockerClient, series_name, case_name, file_elf, file_in, outDir, 'qemu')
+                run_testcase(DockerClient, series_name, case_name, file_host_elf, file_host_in, outDirHost, 'qemu')
                 shutil.copy(os.path.join(outDir, 'output.txt'), file_out)
                 shutil.copy(os.path.join(outDir, 'perf.txt'), file_perf)
             elif judge_type == TYPE_RPI:
                 submit_to_pi_and_wait((full_name, file_code, file_in, file_out, file_perf, False))
             elif judge_type == TYPE_RPI_ELF:
-                genelf_testcase(DockerClient, series_name, case_name, file_code, outDir)
+                genelf_testcase(DockerClient, series_name, case_name, file_host_code, outDirHost)
                 file_elf = os.path.join(workDir, case_name + '.elf')
                 shutil.copy(os.path.join(outDir, 'test.elf'), file_elf)
                 submit_to_pi_and_wait((full_name, file_elf, file_in, file_out, file_perf, True))

@@ -33,8 +33,11 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple # �
     "num-parallel": 8,                                                // 并发测试的线程数量，根据主机的 CPU 核心数量来选定，即平均每个核心测试一个用例。
     "timeout": 60,                                                    // 超时时间，单位为秒，该参数可以缺省，缺省值为 60 秒。
     "rebuild-compiler": true,                                         // 是否重新构建编译器
+    "cache-source": true,                                             // 是否将编译器源代码打包保存到评测记录中，可以缺省，默认值 false
     "run-type": "llvm",                                               // 可选值 "llvm", "qemu", "rpi", "rpi-elf", "interpret"
-    "rpi-address": "http://192.168.1.2:9000"                          // 树莓派 API 地址 (如不测试树莓派可留空)
+    "rpi-address": "http://192.168.1.2:9000",                         // 树莓派 API 地址 (如不测试树莓派可留空)
+    "log-dir": "logs",                                                // 评测记录存放路径 (可以是相对路径) 缺省值为 `logs`
+    "log-dir-host": "logs",                                           // 评测记录在主机上的路径 (使用 docker 运行评测脚本时才需要, 直接在主机上运行可缺省)
 }
 ```
 
@@ -57,9 +60,45 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple # �
 
 ## 运行方法
 
+### 在主机上运行
+
 完成上述所有准备工作后，在激活虚拟环境后执行 `python3 -u main.py` 即可开始测试。测试结果位于 `logs` 目录中。
 
 如果使用的配置文件不是 `config.json` ，则需将配置文件作为第一个命令行参数传入，示例: `python3 -u main.py config-custom.json` 。
+
+### 在 Docker 容器中运行
+
+根据 `Dockerfile` 构建 docker 镜像。由镜像生成容器时:
+
+- 使用 `-v` 选项将主机上的 `/var/run/docker.sock` 挂载到容器内的相同路径，实现 docker in docker
+- 测试用例存放目录和评测结果保存目录，需通过 `-v` 选项挂载到容器
+- 配置文件也需挂载到容器
+
+评测脚本启动 java 与 SysY 的 docker 容器用来执行编译器或工具链，需使用 `-v` 选项挂载文件。当评测脚本运行在 docker 容器中时，由于 docker in docker 的 `-v` 只能挂载主机上的目录 (而不是评测脚本所在容器的目录)，因此在编写配置文件时需要注意:
+
+- `compiler-src` 和 `compiler-build` 使用宿主机路径 (绝对路径) 且无需挂载到评测脚本容器中, `cache-source` 为 `false` 或不填
+- `testcase-base` 使用评测脚本所在容器内的路径 (绝对路径)
+- `log-dir` 使用评测脚本容器内的路径 (可以用相对路径也可以用绝对路径)
+- `log-dir-host` 参数，值为主机上与 `log-dir` 挂载绑定的路径 (绝对路径)
+
+构建 docker 镜像:
+
+```shell
+docker build -t "sysy-test:latest" .
+```
+
+启动并进入容器:
+
+```shell
+docker run -it --rm --name=sysy-test \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v ${TESTCASE_BASE}:/testcase/ \
+    -v ${LOG_HOST_DIR}:/logs/ \
+    -v $(realpath config.json):/app/config.json \
+    sysy-test:latest /bin/bash
+```
+
+（其中 `${TESTCASE_BASE}` 和 `${LOG_HOST_DIR}` 替换成实际的测试集和测试结果目录，配置文件中 `testcase-base` 为 `/testcase/`, `log-dir` 为 `/logs/` ） 
 
 ## 评测结果
 

@@ -30,12 +30,12 @@ CmdBuildCompiler = 'javac -d target -encoding \'utf-8\' $(find src -name \'*.jav
     echo -e \'Manifest-Version: 1.0\\r\\nMain-Class: Compiler\\r\\n\\r\\n\' > META-INF/MANIFEST.MF; \
     jar -cvfm compiler.jar META-INF/MANIFEST.MF *'
 
-CmdCompileLLVM  = 'java -jar compiler.jar -emit-llvm -o test.ll test.sy; cp test.ll /output/; \
-    [ -e test.ll ]'
-CmdCompileARM   = 'java -jar compiler.jar -S -o test.S test.sy; cp test.S /output/; \
-    [ -e test.S ]'
+CmdCompileLLVM  = 'java {opt} -jar compiler.jar -emit-llvm -o test.ll test.sy; cp test.ll /output/; \
+    [ -e test.ll ]'.format(opt=JvmOptions)
+CmdCompileARM   = 'java {opt} -jar compiler.jar -S -o test.S test.sy; cp test.S /output/; \
+    [ -e test.S ]'.format(opt=JvmOptions)
 
-CmdCompileAndRunInterpreter = 'java -jar compiler.jar -I test.sy < input.txt >output.txt 2>perf.txt; cp perf.txt /output/; cp output.txt /output/'
+CmdCompileAndRunInterpreter = 'java {opt} -jar compiler.jar -I test.sy < input.txt >output.txt 2>perf.txt; cp perf.txt /output/; cp output.txt /output/'.format(opt=JvmOptions)
 
 SysyImage = "sysy:latest"
 CmdGenElf = 'arm-linux-gnueabihf-gcc -march=armv7 --static -o test.elf test.S /usr/share/sylib/sylib.a 2>err.txt; cp err.txt /output/; \

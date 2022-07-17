@@ -34,6 +34,7 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple # �
     "timeout": 60,                                                    // 超时时间，单位为秒，该参数可以缺省，缺省值为 60 秒。
     "rebuild-compiler": true,                                         // 是否重新构建编译器
     "cache-source": true,                                             // 是否将编译器源代码打包保存到评测记录中，可以缺省，默认值 false
+    "jvm-options": "",                                                // JVM 参数，例如 "-ea"，缺省值为空
     "run-type": "llvm",                                               // 可选值 "llvm", "qemu", "rpi", "rpi-elf", "interpret"
     "rpi-address": "http://192.168.1.2:9000",                         // 树莓派 API 地址 (如不测试树莓派可留空)
     "log-dir": "logs",                                                // 评测记录存放路径 (可以是相对路径) 缺省值为 `logs`

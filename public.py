@@ -46,6 +46,10 @@ TimeoutSecs = 60
 if 'timeout' in config.keys():
     TimeoutSecs = config['timeout']
 
+JvmOptions = ""
+if 'jvm-options' in config.keys():
+    JvmOptions = config['jvm-options']
+
 logName = datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + "_" + str(os.getpid())
 logDir = os.path.realpath(os.path.join(LogDirBase, logName))
 os.makedirs(logDir)

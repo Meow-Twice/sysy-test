@@ -57,7 +57,7 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple # �
 ### 必需的 docker 镜像
 
 - Java JDK 镜像: `docker pull openjdk:15-alpine`
-- SysY 测试镜像: 基于 GitHub 仓库构建, `git clone git@github.com:dhy2000/sysy-docker.git; cd sysy-docker; ./docker-build.sh` 。镜像名称为 `sysy:latest` 。
+- SysY 测试镜像: 基于 GitHub 仓库构建, `git clone git@github.com:Meow-Twice/sysy-docker.git; cd sysy-docker; ./docker-build.sh` 。镜像名称为 `sysy:latest` 。
 
 ## 运行方法
 

@@ -41,6 +41,7 @@ Executor: ThreadPoolExecutor = None
 rpi_idle_queue = queue.Queue()
 
 def setup_rpi(addresses: list):
+    global Executor, rpi_idle_queue
     real_addrs = []
     for addr in addresses:
         # test this addr
@@ -53,6 +54,7 @@ def setup_rpi(addresses: list):
         rpi_idle_queue.put(addr)
     if len(real_addrs) == 0:
         print('No available rpi')
+        return
     Executor = ThreadPoolExecutor(max_workers=len(real_addrs))
 
 # req: (case_name, target_file, input_file, output_file, perf_file, is_elf)

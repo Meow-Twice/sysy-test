@@ -30,10 +30,10 @@ CmdBuildCompiler = 'javac -d target -encoding \'utf-8\' $(find src -name \'*.jav
     echo -e \'Manifest-Version: 1.0\\r\\nMain-Class: Compiler\\r\\n\\r\\n\' > META-INF/MANIFEST.MF; \
     jar -cvfm compiler.jar META-INF/MANIFEST.MF *'
 
-CmdCompileLLVM  = 'java {opt} -jar compiler.jar -emit-llvm -o test.ll test.sy; cp test.ll /output/; \
-    [ -e test.ll ]'.format(opt=JvmOptions)
-CmdCompileARM   = 'java {opt} -jar compiler.jar -S -o test.S test.sy; cp test.S /output/; \
-    [ -e test.S ]'.format(opt=JvmOptions)
+CmdCompileLLVM  = 'java {opt} -jar compiler.jar -emit-llvm -o test.ll test.sy 2>comp-err.txt; r=$?; cp -t /output/ test.ll comp-err.txt; \
+    [ $r -eq 0 ]'.format(opt=JvmOptions)
+CmdCompileARM   = 'java {opt} -jar compiler.jar -S -o test.S test.sy 2>comp-err.txt; r=$?; cp -t /output/ test.S comp-err.txt; \
+    [ $r -eq 0 ]'.format(opt=JvmOptions)
 
 CmdCompileAndRunInterpreter = 'java {opt} -jar compiler.jar -I test.sy < input.txt >output.txt 2>perf.txt; cp perf.txt /output/; cp output.txt /output/'.format(opt=JvmOptions)
 

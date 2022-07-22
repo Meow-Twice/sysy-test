@@ -1,11 +1,11 @@
 # 编译测试脚本
 
-用于编译比赛本地测试以及 CI 测试，支持五种模式:
+用于 SysY 编译器的本地测试以及 CI 测试，支持五种模式:
 
 - LLVM IR
 - QEMU (ARM ELF, 由交叉编译器将汇编生成 ELF)
-- RPi (ARM 汇编, 在 pi 上链接成 ELF)
-- RPi (ARM ELF, 在 x86 主机上用交叉编译器将 ARM 汇编生成 ELF)
+- 树莓派 (传输 ARM 汇编, 在 pi 上链接成 ELF)
+- 树莓派 (传输 ARM ELF, 在 x86 主机上用交叉编译器对汇编代码进行链接)
 - 解释器模式 (解释执行中间代码)
 
 ## 环境建立说明
@@ -36,7 +36,7 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple # �
     "cache-source": true,                                             // 是否将编译器源代码打包保存到评测记录中，可以缺省，默认值 false
     "jvm-options": "",                                                // JVM 参数，例如 "-ea"，缺省值为空
     "run-type": "llvm",                                               // 可选值 "llvm", "qemu", "rpi", "rpi-elf", "interpret"
-    "rpi-address": "http://192.168.1.2:9000",                         // 树莓派 API 地址 (如不测试树莓派可留空)
+    "rpi-addresses": ["http://192.168.1.2:9000"],                     // 树莓派 API 地址列表 (如不测试树莓派可留空)
     "log-dir": "logs",                                                // 评测记录存放路径 (可以是相对路径) 缺省值为 `logs`
     "log-dir-host": "logs",                                           // 评测记录在主机上的路径 (使用 docker 运行评测脚本时才需要, 直接在主机上运行可缺省)
 }

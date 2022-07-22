@@ -4,7 +4,7 @@ from const import *
 from tasks import compile_testcase, genelf_testcase, run_interpreter, run_testcase
 from util import answer_check
 from public import logDir, logDirHost, DockerClient, CompilerPath, RunType, results
-from rpi import submit_to_pi_and_wait
+from rpi import submit_to_rpi_and_wait
 
 judge_type = RunType
 
@@ -87,12 +87,12 @@ def test_one_case(testcase: tuple):
                 shutil.copy(os.path.join(outDir, 'output.txt'), file_out)
                 shutil.copy(os.path.join(outDir, 'perf.txt'), file_perf)
             elif judge_type == TYPE_RPI:
-                submit_to_pi_and_wait((full_name, file_code, file_in, file_out, file_perf, False))
+                submit_to_rpi_and_wait((full_name, file_code, file_in, file_out, file_perf, False))
             elif judge_type == TYPE_RPI_ELF:
                 genelf_testcase(DockerClient, series_name, case_name, file_host_code, outDirHost)
                 file_elf = os.path.join(workDir, case_name + '.elf')
                 shutil.copy(os.path.join(outDir, 'test.elf'), file_elf)
-                submit_to_pi_and_wait((full_name, file_elf, file_in, file_out, file_perf, True))
+                submit_to_rpi_and_wait((full_name, file_elf, file_in, file_out, file_perf, True))
             else:
                 print('Not Supported Judge Type: {0}'.format(judge_type))
                 return

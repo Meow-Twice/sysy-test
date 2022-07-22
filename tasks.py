@@ -20,7 +20,7 @@ def container_wait(container: Container):
     if exit_code['StatusCode'] != 0:
         logs = str(container.logs())
         container.remove()
-        raise Exception('container exit with code {0}\n{1}'.format(exit_code, logs))
+        raise Exception('container exit with code {0}'.format(exit_code['StatusCode']))
     container.remove()
 
 JavaImage = 'openjdk:15-alpine'
@@ -30,9 +30,9 @@ CmdBuildCompiler = 'javac -d target -encoding \'utf-8\' $(find src -name \'*.jav
     echo -e \'Manifest-Version: 1.0\\r\\nMain-Class: Compiler\\r\\n\\r\\n\' > META-INF/MANIFEST.MF; \
     jar -cvfm compiler.jar META-INF/MANIFEST.MF *'
 
-CmdCompileLLVM  = 'java {opt} -jar compiler.jar -emit-llvm -o test.ll test.sy 2>comp-err.txt; r=$?; cp -t /output/ test.ll comp-err.txt; \
+CmdCompileLLVM  = 'java {opt} -jar compiler.jar -emit-llvm -o test.ll test.sy 2>/output/comp-err.txt; r=$?; cp test.ll /output/; \
     [ $r -eq 0 ]'.format(opt=JvmOptions)
-CmdCompileARM   = 'java {opt} -jar compiler.jar -S -o test.S test.sy 2>comp-err.txt; r=$?; cp -t /output/ test.S comp-err.txt; \
+CmdCompileARM   = 'java {opt} -jar compiler.jar -S -o test.S test.sy 2>/output/comp-err.txt; r=$?; cp test.S /output/; \
     [ $r -eq 0 ]'.format(opt=JvmOptions)
 
 CmdCompileAndRunInterpreter = 'java {opt} -jar compiler.jar -I test.sy < input.txt >output.txt 2>perf.txt; cp perf.txt /output/; cp output.txt /output/'.format(opt=JvmOptions)

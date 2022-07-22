@@ -30,7 +30,7 @@ if 'cache-source' in config.keys():
 RunType = config['run-type']
 
 RpiAddresses = []
-if 'rpi-address' in config.keys():
+if 'rpi-addresses' in config.keys():
     RpiAddresses = config['rpi-addresses']
 
 LogDirBase = 'logs'

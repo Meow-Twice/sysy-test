@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from const import *
 from public import *
-from util import print_result, walk_testcase, display_result, archive_source
+from util import pretty_result, walk_testcase, display_result, archive_source
 from tasks import build_compiler
 from judge import test_one_case
 from rpi import setup_rpi
@@ -32,4 +32,7 @@ with open(os.path.join(logDir, 'result_' + timeNow + '.html'), 'w') as fp:
 with open(os.path.join(logDir, 'result_' + timeNow + '.json'), 'w') as fp:
     json.dump(results, fp=fp)
 
-print_result(results)
+result = pretty_result(results)
+print(result)
+with open(os.path.join(logDir, 'result_' + timeNow + '.txt'), 'w') as fp:
+    fp.write(result)

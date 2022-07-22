@@ -80,13 +80,13 @@ def display_result(results: list, title: str):
 </html>'''.format(title=title, summary=summary, body="\n".join(['<tr>{0}</tr>'.format(s) for s in table_rows]))
     return text
 
-def print_result(results: list):
+def pretty_result(results: list):
     table = prettytable.PrettyTable(field_names=['series', 'case_name', 'verdict', 'comment', 'perf'])
     for r in sorted(results, key=lambda r: (r['series_name'], r['case_name'])):
         table.add_row((r['series_name'], r['case_name'], verdict_name[r['verdict']], r['comment'], reduce_text(r['perf'])))
     print(table)
     summary = get_summary(results)
-    print(summary)
+    return summary
 
 def archive_source(src_dir: str, dst_file: str):
     with tarfile.open(dst_file, "w:gz") as tar:

@@ -15,13 +15,13 @@ def run_testcase_on_pi(rpi_address: str, case_name: str, target_file: str, input
     # 发送 POST 请求传文件
     with open(target_file, "rb") as fp:
         resp = requests.post(url=parse.urljoin(rpi_address, ApiUpload), files={'file': fp})
-        print('--- rpi {name} ---\nupload target returns {status}: {body}\n------'.format(name=case_name, status=resp.status_code, body=resp.text))
+        print('--- rpi {name} @{addr} ---\nupload target returns {status}: {body}\n------'.format(addr=rpi_address, name=case_name, status=resp.status_code, body=resp.text))
         if resp.status_code != 200:
             raise Exception("Failed upload target to pi (code={0}): {1}".format(resp.status_code, resp.text))
     # 发送 POST 请求传输入
     with open(input_file, "rb") as fp:
         resp = requests.post(url=parse.urljoin(rpi_address, API_INPUT), files={'file': fp})
-        print('--- rpi {name} ---\ninput returns {status}: {body}\n------'.format(name=case_name, status=resp.status_code, body=resp.text))
+        print('--- rpi {name} @{addr} ---\ninput returns {status}: {body}\n------'.format(addr=rpi_address, name=case_name, status=resp.status_code, body=resp.text))
         if resp.status_code != 200:
             raise Exception("Failed input to pi (code={0}): {1}".format(resp.status_code, resp.text))
     # 下载输出文件和性能文件

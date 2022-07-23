@@ -1,6 +1,7 @@
 import docker
 from docker.models.containers import Container
 import os
+from log import printLog
 
 from public import *
 
@@ -52,18 +53,18 @@ CmdRunQemu = 'sysy-run-elf.sh test.elf <input.txt >output.txt 2>perf.txt; \
 def build_compiler(client: docker.DockerClient, source_path: str, artifact_path: str) -> bool:
     container_name = 'compiler_{0}_build'.format(os.getpid())
     # cmd = '/bin/sh -ce "cd src; ls -la"'
-    print('building compiler ......')
+    printLog('building compiler ......')
     container: Container = client.containers.run(JavaImage, command=wrap_cmd(CmdBuildCompiler), detach=True, name=container_name, working_dir='/project', volumes={
         os.path.realpath(source_path): {'bind': '/project/src', 'mode': 'ro'},
         os.path.realpath(artifact_path): {'bind': '/project/target', 'mode': 'rw'}
     })
     container_wait(container)
-    print('compiler build finished.')
+    printLog('compiler build finished.')
 
 def compile_testcase(client: docker.DockerClient, series_name: str, case_name: str, compiler_path: str, sy_path: str, output_path: str, type: str='arm'):
     fullname = os.path.join(series_name, case_name)
     container_name = 'compiler_{pid}_compile_{type}_{series}_{name}'.format(pid=os.getpid(), type=type, series=series_name, name=case_name)
-    print('{0} - compiling'.format(fullname))
+    printLog('{0} - compiling'.format(fullname))
     if type == 'llvm':
         cmd = CmdCompileLLVM
     elif type == 'arm':
@@ -76,25 +77,25 @@ def compile_testcase(client: docker.DockerClient, series_name: str, case_name: s
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     })
     container_wait(container)
-    print('{0} - compile finish.'.format(fullname))
+    printLog('{0} - compile finish.'.format(fullname))
 
 def genelf_testcase(client: docker.DockerClient, series_name: str, case_name: str, code_path: str, output_path: str):
     fullname = os.path.join(series_name, case_name)
     container_name = 'compiler_{pid}_genelf_{series}_{name}'.format(pid=os.getpid(), series=series_name, name=case_name)
     assert code_path.endswith('.S')
-    print('{0} - elf generate begin'.format(fullname))
+    printLog('{0} - elf generate begin'.format(fullname))
     container: Container = client.containers.run(image=SysyImage, command=wrap_cmd(CmdGenElf), detach=True, name=container_name, working_dir='/compiler', volumes={
         os.path.realpath(code_path): {'bind': '/compiler/test.S', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     })
     container_wait(container)
-    print('{0} - elf generated.'.format(fullname))
+    printLog('{0} - elf generated.'.format(fullname))
 
 def run_testcase(client: docker.DockerClient, series_name: str, case_name: str, code_path: str, input_path: str, output_path: str, type: str):
     fullname = os.path.join(series_name, case_name)
     _, extension_name = os.path.basename(code_path).split('.')
     container_name = 'compiler_{pid}_run_{type}_{series}_{name}'.format(pid=os.getpid(), type=type, series=series_name, name=case_name)
-    print('{0} - running'.format(fullname))
+    printLog('{0} - running'.format(fullname))
     if type == 'llvm':
         cmd = CmdRunLLVM
     elif type == 'qemu':
@@ -107,13 +108,13 @@ def run_testcase(client: docker.DockerClient, series_name: str, case_name: str, 
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     })
     container_wait(container)
-    print('{0} - run finish.'.format(fullname))
+    printLog('{0} - run finish.'.format(fullname))
 
 def run_interpreter(client: docker.DockerClient, series_name: str, case_name: str, compiler_path: str, sy_path: str, input_path: str, output_path: str):
     _, extension_name = os.path.basename(sy_path).split('.')
     assert extension_name == 'sy'
     container_name = 'compiler_{pid}_interpret_{series}_{name}'.format(pid=os.getpid(), series=series_name, name=case_name)
-    print('{0} - interpret begin.'.format(case_name))
+    printLog('{0} - interpret begin.'.format(case_name))
     container: Container = client.containers.run(image=JavaImage, command=wrap_cmd(CmdCompileAndRunInterpreter), detach=True, name=container_name, working_dir='/compiler', volumes={
         os.path.realpath(compiler_path): {'bind': '/compiler/compiler.jar', 'mode': 'ro'},
         os.path.realpath(sy_path): {'bind': '/compiler/test.sy', 'mode': 'ro'},
@@ -121,4 +122,4 @@ def run_interpreter(client: docker.DockerClient, series_name: str, case_name: st
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     })
     container_wait(container)
-    print('{0} - interpret done.'.format(case_name))
+    printLog('{0} - interpret done.'.format(case_name))

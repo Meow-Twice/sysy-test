@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 import queue
 import sys
 
-from log import printLog
+from logger import printLog
 
 API_UPLOAD_ELF = "/elf"
 API_UPLOAD_ASM = "/asm"

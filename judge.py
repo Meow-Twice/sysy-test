@@ -5,7 +5,7 @@ from tasks import compile_testcase, genelf_testcase, run_interpreter, run_testca
 from util import answer_check, add_result
 from public import logDir, logDirHost, DockerClient, CompilerPath, RunType, results
 from rpi import submit_to_rpi_and_wait
-from log import printLog
+from logger import printLog
 
 judge_type = RunType
 

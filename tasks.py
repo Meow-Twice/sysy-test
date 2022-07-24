@@ -1,7 +1,7 @@
 import docker
 from docker.models.containers import Container
 import os
-from log import printLog
+from logger import printLog
 
 from public import *
 

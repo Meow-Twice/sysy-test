@@ -21,7 +21,6 @@ def container_wait(container: Container):
         raise e
     finally:
         container.remove()
-    print(exit_code)
     if exit_code['Error'] is not None:
         raise Exception(exit_code['Error'])
     elif exit_code['StatusCode'] != 0:

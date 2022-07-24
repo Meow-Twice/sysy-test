@@ -30,12 +30,13 @@ CmdBuildCompiler = 'javac -d target -encoding \'utf-8\' $(find src -name \'*.jav
     echo -e \'Manifest-Version: 1.0\\r\\nMain-Class: Compiler\\r\\n\\r\\n\' > META-INF/MANIFEST.MF; \
     jar -cvfm compiler.jar META-INF/MANIFEST.MF *'
 
-CmdCompileLLVM  = 'java {opt} -jar compiler.jar -emit-llvm -o test.ll test.sy 2>/output/comp-err.txt; r=$?; cp test.ll /output/; \
-    [ $r -eq 0 ]'.format(opt=JvmOptions)
-CmdCompileARM   = 'java {opt} -jar compiler.jar -S -o test.S test.sy 2>/output/comp-err.txt; r=$?; cp test.S /output/; \
-    [ $r -eq 0 ]'.format(opt=JvmOptions)
+CmdCompileLLVM  = 'java {jvm} -jar compiler.jar -emit-llvm -o test.ll test.sy {opt} 2>/output/comp-err.txt; r=$?; cp test.ll /output/; \
+    [ $r -eq 0 ]'.format(jvm=JvmOptions, opt=OptOption)
+CmdCompileARM   = 'java {jvm} -jar compiler.jar -S -o test.S test.sy {opt} 2>/output/comp-err.txt; r=$?; cp test.S /output/; \
+    [ $r -eq 0 ]'.format(jvm=JvmOptions, opt=OptOption)
 
-CmdCompileAndRunInterpreter = 'java {opt} -jar compiler.jar -I test.sy < input.txt >output.txt 2>perf.txt; cp perf.txt /output/; cp output.txt /output/'.format(opt=JvmOptions)
+CmdCompileAndRunInterpreter = 'java {jvm} -jar compiler.jar -I test.sy {opt} < input.txt >output.txt 2>perf.txt; \
+    cp perf.txt /output/; cp output.txt /output/'.format(jvm=JvmOptions, opt=OptOption)
 
 SysyImage = "sysy:latest"
 CmdGenElf = 'arm-linux-gnueabihf-gcc -march=armv7 --static -o test.elf test.S /usr/share/sylib/sylib.a 2>err.txt; cp err.txt /output/; \

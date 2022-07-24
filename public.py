@@ -50,6 +50,12 @@ JvmOptions = ""
 if 'jvm-options' in config.keys():
     JvmOptions = config['jvm-options']
 
+EnableOptimize = False
+if 'enable-optimize' in config.keys():
+    EnableOptimize = config['enable-optimize']
+
+OptOption = "-O2" if EnableOptimize else ""
+
 logName = datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + "_" + str(os.getpid())
 logDir = os.path.realpath(os.path.join(LogDirBase, logName))
 os.makedirs(logDir)

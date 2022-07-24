@@ -12,6 +12,13 @@ if len(sys.argv) >= 2:
 with open(ConfigFile, 'r') as fp:
     config: dict = json.load(fp)
 
+def get_config(key: str, default=None):
+    if default is None:
+        return config[key]
+    if not key in config.keys():
+        return default
+    return config[key]
+
 CompilerSrc = config['compiler-src']      # path to the compiler source code (./src/)
 CompilerBuild = config['compiler-build']  # path to compiler build artifact
 CompilerFileName = 'compiler.jar'  # name of executable jar
@@ -23,38 +30,20 @@ NumParallel = config['num-parallel']
 
 RebuildCompiler = config['rebuild-compiler']
 
-CacheSource = False
-if 'cache-source' in config.keys():
-    CacheSource = config['cache-source']
-
 RunType = config['run-type']
 
-RpiAddresses = []
-if 'rpi-addresses' in config.keys():
-    RpiAddresses = config['rpi-addresses']
+CacheSource = get_config('cache-source', False)
+RpiAddresses = get_config('rpi-addresses', [])
+LogDirBase = get_config('log-dir', 'logs')
+LogDirHostBase = get_config('log-dir-host', 'logs')
+TimeoutSecs = get_config('timeout', 60)
 
-LogDirBase = 'logs'
-if 'log-dir' in config.keys():
-    LogDirBase = config['log-dir']
+JvmOptions = get_config('jvm-options', "")
 
-LogDirHostBase = 'logs'
-if 'log-dir-host' in config.keys():
-    LogDirHostBase = config['log-dir-host']
-
-TimeoutSecs = 60
-
-if 'timeout' in config.keys():
-    TimeoutSecs = config['timeout']
-
-JvmOptions = ""
-if 'jvm-options' in config.keys():
-    JvmOptions = config['jvm-options']
-
-EnableOptimize = False
-if 'enable-optimize' in config.keys():
-    EnableOptimize = config['enable-optimize']
-
+EnableOptimize = get_config('enable-optimize', False)
 OptOption = "-O2" if EnableOptimize else ""
+
+MemoryLimit = get_config('memory-limit', '256m')
 
 logName = datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + "_" + str(os.getpid())
 logDir = os.path.realpath(os.path.join(LogDirBase, logName))

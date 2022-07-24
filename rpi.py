@@ -58,7 +58,7 @@ def setup_rpi(addresses: list):
         try:
             requests.get(url=addr, timeout=2)
         except:
-            printLog('Invalid rpi address: {0}'.format(addr), file=sys.stderr)
+            printLog('Invalid rpi address: {0}'.format(addr))
             continue    # pi-side service is offline.
         real_addrs.append(addr)
         rpi_idle_queue.put(addr)

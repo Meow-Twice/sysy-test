@@ -5,6 +5,8 @@ from log import printLog
 
 from public import *
 
+debug_container = False # if true, containers will not be removed after finished.
+
 def wrap_cmd(cmd: str) -> str:
     return '/bin/sh -c "{0}"'.format(cmd.replace("\"", "\\\""))
 
@@ -16,12 +18,14 @@ def container_wait(container: Container):
             container.kill()
         except:
             pass
-        container.remove()
         raise e
-    if exit_code['StatusCode'] != 0:
+    finally:
         container.remove()
-        raise Exception('container exit with code {0}'.format(exit_code['StatusCode']))
-    container.remove()
+    print(exit_code)
+    if exit_code['Error'] is not None:
+        raise Exception(exit_code['Error'])
+    elif exit_code['StatusCode'] != 0:
+        raise Exception('container exit with code {0}'.format(exit_code['StatusCode'])) # you should see logs dir for further information
 
 JavaImage = 'openjdk:15-alpine'
 
@@ -58,7 +62,7 @@ def build_compiler(client: docker.DockerClient, source_path: str, artifact_path:
     container: Container = client.containers.run(JavaImage, command=wrap_cmd(CmdBuildCompiler), detach=True, name=container_name, working_dir='/project', volumes={
         os.path.realpath(source_path): {'bind': '/project/src', 'mode': 'ro'},
         os.path.realpath(artifact_path): {'bind': '/project/target', 'mode': 'rw'}
-    })
+    }, mem_limit=MemoryLimit)
     container_wait(container)
     printLog('compiler build finished.')
 
@@ -76,7 +80,7 @@ def compile_testcase(client: docker.DockerClient, series_name: str, case_name: s
         os.path.realpath(compiler_path): {'bind': '/compiler/compiler.jar', 'mode': 'ro'},
         os.path.realpath(sy_path): {'bind': '/compiler/test.sy', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
-    })
+    }, mem_limit=MemoryLimit)
     container_wait(container)
     printLog('{0} - compile finish.'.format(fullname))
 
@@ -88,7 +92,7 @@ def genelf_testcase(client: docker.DockerClient, series_name: str, case_name: st
     container: Container = client.containers.run(image=SysyImage, command=wrap_cmd(CmdGenElf), detach=True, name=container_name, working_dir='/compiler', volumes={
         os.path.realpath(code_path): {'bind': '/compiler/test.S', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
-    })
+    }, mem_limit=MemoryLimit)
     container_wait(container)
     printLog('{0} - elf generated.'.format(fullname))
 
@@ -107,7 +111,7 @@ def run_testcase(client: docker.DockerClient, series_name: str, case_name: str, 
         os.path.realpath(code_path): {'bind': '/compiler/test.' + extension_name, 'mode': 'ro'},
         os.path.realpath(input_path): {'bind': '/compiler/input.txt', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
-    })
+    }, mem_limit=MemoryLimit)
     container_wait(container)
     printLog('{0} - run finish.'.format(fullname))
 
@@ -121,6 +125,6 @@ def run_interpreter(client: docker.DockerClient, series_name: str, case_name: st
         os.path.realpath(sy_path): {'bind': '/compiler/test.sy', 'mode': 'ro'},
         os.path.realpath(input_path): {'bind': '/compiler/input.txt', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
-    })
+    }, mem_limit=MemoryLimit)
     container_wait(container)
     printLog('{0} - interpret done.'.format(case_name))

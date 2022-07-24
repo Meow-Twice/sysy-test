@@ -2,7 +2,7 @@ import os, shutil
 
 from const import *
 from tasks import compile_testcase, genelf_testcase, run_interpreter, run_testcase
-from util import answer_check
+from util import answer_check, add_result
 from public import logDir, logDirHost, DockerClient, CompilerPath, RunType, results
 from rpi import submit_to_rpi_and_wait
 from log import printLog
@@ -45,7 +45,7 @@ def test_one_case(testcase: tuple):
         except Exception as e:
             verdict = RUNTIME_ERROR
             comment = str(e)
-            results.append({'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
+            add_result({'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
             printLog('Testcase {0} Interpret Error with {1}'.format(full_name, comment))
             return
     else:
@@ -58,9 +58,9 @@ def test_one_case(testcase: tuple):
                 printLog('Not Supported Judge Type: {0}'.format(judge_type))
                 return
         except Exception as e:
-            verdict = RUNTIME_ERROR
+            verdict = COMPILE_ERROR
             comment = str(e)
-            results.append({'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
+            add_result({'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
             printLog('Testcase {0} COMPILE_ERROR with {1}'.format(full_name, comment))
             return
         # Get compiled target of testcase
@@ -100,7 +100,7 @@ def test_one_case(testcase: tuple):
         except Exception as e:
             verdict = RUNTIME_ERROR
             comment = str(e)
-            results.append({'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
+            add_result({'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
             printLog('Testcase {0} RUNTIME_ERROR with {1}'.format(full_name, comment))
             return
     printLog('{0} executed.'.format(full_name))
@@ -115,7 +115,7 @@ def test_one_case(testcase: tuple):
             stdout_text = fp.read()
         with open(file_ans, 'r') as fp:
             answer_text = fp.read()
-        results.append({'series_name': series_name, 'case_name': case_name, 'verdict': WRONG_ANSWER, 'comment': comment, 'perf': perf_text, 'stdin': stdin_text, 'stdout': stdout_text, 'answer': answer_text})
+        add_result({'series_name': series_name, 'case_name': case_name, 'verdict': WRONG_ANSWER, 'comment': comment, 'perf': perf_text, 'stdin': stdin_text, 'stdout': stdout_text, 'answer': answer_text})
     else:
-        results.append({'series_name': series_name, 'case_name': case_name, 'verdict': ACCEPTED, 'comment': comment, 'perf': perf_text, 'stdin': '', 'stdout': '', 'answer': ''})
+        add_result({'series_name': series_name, 'case_name': case_name, 'verdict': ACCEPTED, 'comment': comment, 'perf': perf_text, 'stdin': '', 'stdout': '', 'answer': ''})
     printLog('{0} finished: correct={1}'.format(full_name, correct))

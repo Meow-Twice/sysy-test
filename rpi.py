@@ -19,17 +19,17 @@ def run_testcase_on_pi(rpi_address: str, case_name: str, target_file: str, input
     # 发送 POST 请求传文件
     with open(target_file, "rb") as fp:
         printLog('--- {0} uploading target ---'.format(rpi_testcase_ident))
-        resp = requests.post(url=parse.urljoin(rpi_address, ApiUpload), files={'file': fp})
+        resp = requests.post(url=parse.urljoin(rpi_address, ApiUpload), data=fp)
         printLog('--- {0} upload target returns {1}:\n{2}\n------'.format(rpi_testcase_ident, resp.status_code, resp.text))
         if resp.status_code != 200:
-            raise Exception("Failed upload target to {0} (code={1}): {2}".format(rpi_testcase_ident, resp.status_code, resp.text))
+            raise Exception("Failed upload target to {0} (code={1}): \n{2}".format(rpi_testcase_ident, resp.status_code, resp.text))
     # 发送 POST 请求传输入
     with open(input_file, "rb") as fp:
         printLog('--- {0} sending input ---'.format(rpi_testcase_ident))
-        resp = requests.post(url=parse.urljoin(rpi_address, API_INPUT), files={'file': fp})
+        resp = requests.post(url=parse.urljoin(rpi_address, API_INPUT), data=fp)
         printLog('--- {0} input returns {1}:\n{2}\n------'.format(rpi_testcase_ident, resp.status_code, resp.text))
         if resp.status_code != 200:
-            raise Exception("Failed input to {0} (code={1}): {2}".format(rpi_testcase_ident, resp.status_code, resp.text))
+            raise Exception("Failed input to {0} (code={1}): \n{2}".format(rpi_testcase_ident, resp.status_code, resp.text))
     # 下载输出文件和性能文件
     with open(output_file, "w") as fp:
         printLog('--- {0} retriving output ---'.format(rpi_testcase_ident))

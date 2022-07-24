@@ -44,19 +44,27 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple # �
 }
 ```
 
-其中:
+评测方式 `run-type` 参数取值说明
 
+- `llvm`: 测试编译器前端，目标代码为 LLVM IR
+- `qemu`: 目标代码为 arm 汇编，使用交叉编译器生成 ELF 并用 qemu 在 x86 机器上测试目标程序
+- `rpi`: 目标代码为 arm 汇编，通过 API 在树莓派上链接生成 ELF 并运行
+- `rpi-elf`: 目标代码为 arm 汇编，用交叉编译器生成 ELF 并通过 API 在树莓派上执行
+- `interpret`: 编译器直接解释执行待编译的程序，读取标准输入并给出标准输出
+
+参数注意事项：
+
+- `compiler-src`, `compiler-build`, `testcase-base` 三个路径须使用绝对路径。
 - 一个测试集 (位于 `testcase-base` 目录下的一个子目录, 通过 `testcase-select` 参数选定)为一个目录，内部由 `.sy`, `.in` 和 `.out` 文件组成。
 - 测试自己的编译器，`rebuild-compiler` 参数应为 `true` ；测试往届编译器，此参数为 `false`，此时应将打包好的往届编译器命名为 `compiler.jar` 并置入 `compiler-build` 指向的目录下。
-- `run-type` 参数的取值和含义对应：
-  - `llvm`: 测试编译器前端，目标代码为 LLVM IR
-  - `qemu`: 目标代码为 arm 汇编，使用交叉编译器生成 ELF 并用 qemu 在 x86 机器上测试目标程序
-  - `rpi`: 目标代码为 arm 汇编，通过 API 在树莓派上链接生成 ELF 并运行
-  - `rpi-elf`: 目标代码为 arm 汇编，用交叉编译器生成 ELF 并通过 API 在树莓派上执行
-  - `interpret`: 编译器直接解释执行待编译的程序，读取标准输入并给出标准输出
-- `compiler-src`, `compiler-build`, `testcase-base` 三个路径须使用绝对路径。
 - `log-dir` 和 `log-dir-host` 如果评测程序在 docker 中运行则必须为绝对路径。
-- **强烈建议**配置 `memory-limit` 参数限制单个 docker 容器的内存占用，该参数的取值推荐和 `num-parallel` 参数配合，使得总内存占用不超过系统内存。
+
+其他注意事项：
+
+- 默认的 docker 容器所给的内存限制较小，如果编译、链接或执行所需内存空间较大，请手动指定 `memory-limit` 参数（例如设置为 `4g` 即可获得较大内存空间
+- 容器内存限制 `memory-limit` 和线程数量 `num-parallel` 两参数之间为此消彼长关系，应合理配置以避免系统内存不足
+  - 推荐将内存消耗不同的性能测试点分成多个测试集（以及多个配置文件），分开评测
+- 推荐关闭 swap，经实测开启 swap 在某些特定条件下会导致文件系统崩溃
 
 ### 必需的 docker 镜像
 

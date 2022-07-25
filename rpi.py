@@ -1,9 +1,7 @@
-from unicodedata import name
 import requests
 from urllib import parse
 from concurrent.futures import ThreadPoolExecutor
 import queue
-import sys
 
 from logger import printLog
 

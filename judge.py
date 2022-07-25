@@ -1,9 +1,9 @@
 import os, shutil
 
 from const import *
-from tasks import compile_testcase, genelf_testcase, run_interpreter, run_testcase
-from util import answer_check, add_result
-from public import logDir, logDirHost, DockerClient, CompilerPath, RunType, results
+from tasks import *
+from util import answer_check
+from public import *
 from rpi import submit_to_rpi_and_wait
 from logger import printLog
 

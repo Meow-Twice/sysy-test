@@ -93,11 +93,3 @@ def pretty_result(results: list):
 def archive_source(src_dir: str, dst_file: str):
     with tarfile.open(dst_file, "w:gz") as tar:
         tar.add(src_dir, arcname=os.path.basename(src_dir))
-
-def add_result(result):
-    results.append(result)
-    with open(os.path.join(logDir, 'tmp_result.html'), 'w') as fp:
-        fp.write(display_result(results, title=logName))
-    with open(os.path.join(logDir, 'tmp_result.json'), 'w') as fp:
-        json.dump(results, fp=fp)
-    pass

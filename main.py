@@ -24,15 +24,13 @@ setup_rpi(RpiAddresses)
 with ThreadPoolExecutor(max_workers=NumParallel) as pool:
     pool.map(test_one_case, testcases)
 
-timeNow = datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + "_" + str(os.getpid())
-
-with open(os.path.join(logDir, 'result_' + timeNow + '.html'), 'w') as fp:
+with open(os.path.join(logDir, 'result_' + logName + '.html'), 'w') as fp:
     fp.write(display_result(results, title=logName))
 
-with open(os.path.join(logDir, 'result_' + timeNow + '.json'), 'w') as fp:
+with open(os.path.join(logDir, 'result_' + logName + '.json'), 'w') as fp:
     json.dump(results, fp=fp)
 
 result = pretty_result(results)
 print(result)
-with open(os.path.join(logDir, 'result_' + timeNow + '.txt'), 'w') as fp:
+with open(os.path.join(logDir, 'result_' + logName + '.txt'), 'w') as fp:
     fp.write(result)

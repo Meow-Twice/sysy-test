@@ -51,7 +51,9 @@ os.makedirs(logDir)
 
 logDirHost = os.path.realpath(os.path.join(LogDirHostBase, logName))
 
-results = [] # (series, name, verdict, comment, perf, stdin, stdout, answer)
+results = [] # {series, name, verdict, comment, perf, stdin, stdout, answer}
 
-def add_result(result):
+def add_result(workDir: str, result):
     results.append(result)
+    with open(os.path.join(workDir, 'result.json'), "w") as fp:
+        json.dump(result, fp=fp)

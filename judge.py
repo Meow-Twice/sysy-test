@@ -45,7 +45,7 @@ def test_one_case(testcase: tuple):
         except Exception as e:
             verdict = RUNTIME_ERROR
             comment = str(e)
-            add_result({'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
+            add_result(workDir, {'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
             printLog('Testcase {0} Interpret Error with {1}'.format(full_name, comment))
             return
     else:
@@ -60,7 +60,7 @@ def test_one_case(testcase: tuple):
         except Exception as e:
             verdict = COMPILE_ERROR
             comment = str(e)
-            add_result({'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
+            add_result(workDir, {'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
             printLog('Testcase {0} COMPILE_ERROR with {1}'.format(full_name, comment))
             return
         # Get compiled target of testcase
@@ -100,7 +100,7 @@ def test_one_case(testcase: tuple):
         except Exception as e:
             verdict = RUNTIME_ERROR
             comment = str(e)
-            add_result({'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
+            add_result(workDir, {'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
             printLog('Testcase {0} RUNTIME_ERROR with {1}'.format(full_name, comment))
             return
     printLog('{0} executed.'.format(full_name))
@@ -115,7 +115,7 @@ def test_one_case(testcase: tuple):
             stdout_text = fp.read()
         with open(file_ans, 'r') as fp:
             answer_text = fp.read()
-        add_result({'series_name': series_name, 'case_name': case_name, 'verdict': WRONG_ANSWER, 'comment': comment, 'perf': perf_text, 'stdin': stdin_text, 'stdout': stdout_text, 'answer': answer_text})
+        add_result(workDir, {'series_name': series_name, 'case_name': case_name, 'verdict': WRONG_ANSWER, 'comment': comment, 'perf': perf_text, 'stdin': stdin_text, 'stdout': stdout_text, 'answer': answer_text})
     else:
-        add_result({'series_name': series_name, 'case_name': case_name, 'verdict': ACCEPTED, 'comment': comment, 'perf': perf_text, 'stdin': '', 'stdout': '', 'answer': ''})
+        add_result(workDir, {'series_name': series_name, 'case_name': case_name, 'verdict': ACCEPTED, 'comment': comment, 'perf': perf_text, 'stdin': '', 'stdout': '', 'answer': ''})
     printLog('{0} finished: correct={1}'.format(full_name, correct))

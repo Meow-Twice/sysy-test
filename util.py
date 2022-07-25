@@ -5,7 +5,6 @@ import tarfile
 import prettytable
 
 from const import verdict_name, ACCEPTED
-from public import results, logDir, logName
 
 # 遍历测试点
 def walk_testcase(baseDir: str, dirs: list): # [(series_name, case_name, path_to_sy, path_to_in, path_to_out)]

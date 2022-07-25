@@ -10,9 +10,9 @@ debug_container = False # if true, containers will not be removed after finished
 def wrap_cmd(cmd: str) -> str:
     return '/bin/sh -c "{0}"'.format(cmd.replace("\"", "\\\""))
 
-def container_wait(container: Container):
+def container_wait(container: Container, name: str):
     try:
-        exit_code = container.wait(timeout=TimeoutSecs)
+        exit = container.wait(timeout=TimeoutSecs)
     except Exception as e:
         try:
             container.kill()
@@ -20,11 +20,12 @@ def container_wait(container: Container):
             pass
         raise e
     finally:
-        container.remove()
-    if exit_code['Error'] is not None:
-        raise Exception(exit_code['Error'])
-    elif exit_code['StatusCode'] != 0:
-        raise Exception('container exit with code {0}'.format(exit_code['StatusCode'])) # you should see logs dir for further information
+        if not debug_container:
+            container.remove()
+    if exit['Error'] is not None:
+        raise Exception('{name}: container exit with error {err}'.format(name=name, err=exit['Error']))
+    elif exit['StatusCode'] != 0:
+        raise Exception('{name}: container exit with code {code}'.format(name=name, code=exit['StatusCode'])) # you should see logs dir for further information
 
 JavaImage = 'openjdk:15-alpine'
 
@@ -62,7 +63,7 @@ def build_compiler(client: docker.DockerClient, source_path: str, artifact_path:
         os.path.realpath(source_path): {'bind': '/project/src', 'mode': 'ro'},
         os.path.realpath(artifact_path): {'bind': '/project/target', 'mode': 'rw'}
     }, mem_limit=MemoryLimit)
-    container_wait(container)
+    container_wait(container, 'build_compiler')
     printLog('compiler build finished.')
 
 def compile_testcase(client: docker.DockerClient, series_name: str, case_name: str, compiler_path: str, sy_path: str, output_path: str, type: str='arm'):
@@ -80,7 +81,7 @@ def compile_testcase(client: docker.DockerClient, series_name: str, case_name: s
         os.path.realpath(sy_path): {'bind': '/compiler/test.sy', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     }, mem_limit=MemoryLimit)
-    container_wait(container)
+    container_wait(container, 'compile')
     printLog('{0} - compile finish.'.format(fullname))
 
 def genelf_testcase(client: docker.DockerClient, series_name: str, case_name: str, code_path: str, output_path: str):
@@ -92,7 +93,7 @@ def genelf_testcase(client: docker.DockerClient, series_name: str, case_name: st
         os.path.realpath(code_path): {'bind': '/compiler/test.S', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     }, mem_limit=MemoryLimit)
-    container_wait(container)
+    container_wait(container, 'genelf')
     printLog('{0} - elf generated.'.format(fullname))
 
 def run_testcase(client: docker.DockerClient, series_name: str, case_name: str, code_path: str, input_path: str, output_path: str, type: str):
@@ -111,7 +112,7 @@ def run_testcase(client: docker.DockerClient, series_name: str, case_name: str, 
         os.path.realpath(input_path): {'bind': '/compiler/input.txt', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     }, mem_limit=MemoryLimit)
-    container_wait(container)
+    container_wait(container, 'run')
     printLog('{0} - run finish.'.format(fullname))
 
 def run_interpreter(client: docker.DockerClient, series_name: str, case_name: str, compiler_path: str, sy_path: str, input_path: str, output_path: str):
@@ -125,5 +126,5 @@ def run_interpreter(client: docker.DockerClient, series_name: str, case_name: st
         os.path.realpath(input_path): {'bind': '/compiler/input.txt', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     }, mem_limit=MemoryLimit)
-    container_wait(container)
+    container_wait(container, 'interpret')
     printLog('{0} - interpret done.'.format(case_name))

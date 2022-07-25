@@ -35,7 +35,7 @@ RunType = config['run-type']
 CacheSource = get_config('cache-source', False)
 RpiAddresses = get_config('rpi-addresses', [])
 LogDirBase = get_config('log-dir', 'logs')
-LogDirHostBase = get_config('log-dir-host', 'logs')
+LogDirHostBase = get_config('log-dir-host', LogDirBase)
 TimeoutSecs = get_config('timeout', 60)
 
 JvmOptions = get_config('jvm-options', "")

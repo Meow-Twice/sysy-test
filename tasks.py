@@ -35,24 +35,21 @@ CmdBuildCompiler = 'javac -d target -encoding \'utf-8\' $(find src -name \'*.jav
     jar -cvfm compiler.jar META-INF/MANIFEST.MF *'
 
 CmdCompileLLVM  = 'java {jvm} -jar compiler.jar -emit-llvm -o test.ll test.sy {opt} 2>/output/comp-err.txt; r=$?; cp test.ll /output/; \
-    [ $r -eq 0 ]'.format(jvm=JvmOptions, opt=OptOption)
+    exit $r'.format(jvm=JvmOptions, opt=OptOption)
 CmdCompileARM   = 'java {jvm} -jar compiler.jar -S -o test.S test.sy {opt} 2>/output/comp-err.txt; r=$?; cp test.S /output/; \
-    [ $r -eq 0 ]'.format(jvm=JvmOptions, opt=OptOption)
+    exit $r'.format(jvm=JvmOptions, opt=OptOption)
 
-CmdCompileAndRunInterpreter = 'java {jvm} -jar compiler.jar -I test.sy {opt} < input.txt >output.txt 2>perf.txt; \
-    cp perf.txt /output/; cp output.txt /output/'.format(jvm=JvmOptions, opt=OptOption)
+CmdCompileAndRunInterpreter = 'java {jvm} -jar compiler.jar -I test.sy {opt} < input.txt >/output/output.txt 2>/output/perf.txt'.format(jvm=JvmOptions, opt=OptOption)
 
 SysyImage = "sysy:latest"
-CmdGenElf = 'arm-linux-gnueabihf-gcc -march=armv7 --static -o test.elf test.S /usr/share/sylib/sylib.a 2>err.txt; cp err.txt /output/; \
-    if [ -e test.elf ]; then cp test.elf /output/; else false; fi'
+CmdGenElf = 'arm-linux-gnueabihf-gcc -march=armv7 --static -o test.elf test.S /usr/share/sylib/sylib.a 2>/output/err.txt; r=$?; \
+    if [ -e test.elf ]; then cp test.elf /output/; else exit $r; fi'
 
-CmdRunLLVM = 'sysy-run-llvm.sh test.ll <input.txt >output.txt 2>perf.txt; \
-    echo $? >> exit.txt; cp perf.txt /output/; \
-    if [ ! -z $(tail -c 1 output.txt) ]; then echo >> output.txt; fi; cat exit.txt >> output.txt; cp output.txt /output/'
+CmdRunLLVM = 'sysy-run-llvm.sh test.ll <input.txt >output.txt 2>/output/perf.txt; r=$?; \
+    if [ ! -z $(tail -c 1 output.txt) ]; then echo >> output.txt; fi; echo $r >> output.txt; cp output.txt /output/'
 
-CmdRunQemu = 'sysy-run-elf.sh test.elf <input.txt >output.txt 2>perf.txt; \
-    echo $? >> exit.txt; cp perf.txt /output/; \
-    if [ ! -z $(tail -c 1 output.txt) ]; then echo >> output.txt; fi; cat exit.txt >> output.txt; cp output.txt /output/'
+CmdRunQemu = 'sysy-run-elf.sh test.elf <input.txt >output.txt 2>/output/perf.txt; r=$?; \
+    if [ ! -z $(tail -c 1 output.txt) ]; then echo >> output.txt; fi; echo $r >> output.txt; cp output.txt /output/'
 
 # 构建编译器, project_path 和 artifact_path 均为主机的路径 (使用 -v 选项挂载)
 def build_compiler(client: docker.DockerClient, source_path: str, artifact_path: str) -> bool:

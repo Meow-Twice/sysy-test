@@ -51,6 +51,8 @@ os.makedirs(logDir)
 
 logDirHost = os.path.realpath(os.path.join(LogDirHostBase, logName))
 
+logFile = open(os.path.join(logDir, logName + '.log'), 'a')
+
 results = [] # {series, name, verdict, comment, perf, stdin, stdout, answer}
 
 def add_result(workDir: str, result):

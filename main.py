@@ -34,3 +34,6 @@ result = pretty_result(results)
 print(result)
 with open(os.path.join(logDir, 'result_' + logName + '.txt'), 'w') as fp:
     fp.write(result)
+
+# close log file
+logFile.close()

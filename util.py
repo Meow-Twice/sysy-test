@@ -85,9 +85,8 @@ def pretty_result(results: list):
     table = prettytable.PrettyTable(field_names=['series', 'case_name', 'verdict', 'comment', 'perf'])
     for r in sorted(results, key=lambda r: (r['series_name'], r['case_name'])):
         table.add_row((r['series_name'], r['case_name'], verdict_name[r['verdict']], r['comment'], reduce_text(r['perf'])))
-    print(table)
     summary = get_summary(results)
-    return summary
+    return "\n".join([str(table), summary])
 
 def archive_source(src_dir: str, dst_file: str):
     with tarfile.open(dst_file, "w:gz") as tar:

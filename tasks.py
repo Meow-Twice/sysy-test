@@ -29,7 +29,7 @@ def container_wait(container: Container, name: str):
 
 JavaImage = 'openjdk:15-alpine'
 
-CmdBuildCompiler = 'javac -d target -encoding \'utf-8\' $(find src -name \'*.java\' -type f); \
+CmdBuildCompiler = 'javac -d target -encoding \'utf-8\' $(find src -name \'*.java\' -type f); r=$?; if [ $r -ne 0 ]; then exit $r; fi; \
     cd target; echo \'**\' > .gitignore; mkdir -p META-INF; \
     echo -e \'Manifest-Version: 1.0\\r\\nMain-Class: Compiler\\r\\n\\r\\n\' > META-INF/MANIFEST.MF; \
     jar -cvfm compiler.jar META-INF/MANIFEST.MF *'

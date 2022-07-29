@@ -46,10 +46,10 @@ CmdGenElf = 'arm-linux-gnueabihf-gcc -march=armv7 --static -o test.elf test.S /u
     if [ -e test.elf ]; then cp test.elf /output/; else exit $r; fi'
 
 CmdRunLLVM = 'sysy-run-llvm.sh test.ll <input.txt >output.txt 2>/output/perf.txt; r=$?; \
-    if [ ! -z $(tail -c 1 output.txt) ]; then echo >> output.txt; fi; echo $r >> output.txt; cp output.txt /output/'
+    if [ ! -z "$(tail -c 1 output.txt)" ]; then echo >> output.txt; fi; echo $r >> output.txt; cp output.txt /output/'
 
 CmdRunQemu = 'sysy-run-elf.sh test.elf <input.txt >output.txt 2>/output/perf.txt; r=$?; \
-    if [ ! -z $(tail -c 1 output.txt) ]; then echo >> output.txt; fi; echo $r >> output.txt; cp output.txt /output/'
+    if [ ! -z "$(tail -c 1 output.txt)" ]; then echo >> output.txt; fi; echo $r >> output.txt; cp output.txt /output/'
 
 # 构建编译器, project_path 和 artifact_path 均为主机的路径 (使用 -v 选项挂载)
 def build_compiler(client: docker.DockerClient, source_path: str, artifact_path: str) -> bool:

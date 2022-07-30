@@ -1,4 +1,4 @@
-import os, shutil
+import os, stat, shutil
 
 from const import *
 from tasks import *
@@ -8,6 +8,8 @@ from rpi import submit_to_rpi
 from logger import printLog
 
 judge_type = RunType
+
+remove_elf_after_run = True
 
 # testcase: {series_name, case_name, file_src, file_in, file_ans}
 # judge_context: {series_name, case_name, work_dir, out_dir, work_dir_host, out_dir_host, 
@@ -90,10 +92,11 @@ def test_one_case(testcase: dict):
                 shutil.copy(os.path.join(judge['out_dir'], 'output.txt'), judge['file_out'])
                 shutil.copy(os.path.join(judge['out_dir'], 'perf.txt'), judge['file_perf'])
             elif judge_type == TYPE_QEMU:
-                genelf_testcase(DockerClient, judge['case_fullname'], judge['file_asm_host'], judge['out_dir_host'])
                 judge['file_elf'] = os.path.join(judge['work_dir'], case_name + '.elf')
                 judge['file_elf_host'] = os.path.join(judge['work_dir_host'], case_name + '.elf')
-                shutil.copy(os.path.join(judge['out_dir'], 'test.elf'), judge['file_elf'])
+                open(judge['file_elf'], 'w').close()    # create an empty elf
+                genelf_testcase(DockerClient, judge['case_fullname'], judge['file_asm_host'], judge['file_elf_host'], judge['out_dir_host'])
+                os.chmod(judge['file_elf'], os.stat(judge['file_elf']) | stat.S_IEXEC)
                 run_testcase(DockerClient, judge['case_fullname'], judge['file_elf_host'], judge['file_in_host'], judge['out_dir_host'], 'qemu')
                 shutil.copy(os.path.join(judge['out_dir'], 'output.txt'), judge['file_out'])
                 shutil.copy(os.path.join(judge['out_dir'], 'perf.txt'), judge['file_perf'])
@@ -101,9 +104,10 @@ def test_one_case(testcase: dict):
                 submit_to_rpi(judge, read_out_and_check)
                 return  # get result is async
             elif judge_type == TYPE_RPI_ELF:
-                genelf_testcase(DockerClient, judge['case_fullname'], judge['file_asm_host'], judge['out_dir_host'])
                 judge['file_elf'] = os.path.join(judge['work_dir'], case_name + '.elf')
-                shutil.copy(os.path.join(judge['out_dir'], 'test.elf'), judge['file_elf'])
+                judge['file_elf_host'] = os.path.join(judge['work_dir_host'], case_name + '.elf')
+                open(judge['file_elf'], 'w').close()    # create an empty elf
+                genelf_testcase(DockerClient, judge['case_fullname'], judge['file_asm_host'], judge['file_elf_host'], judge['out_dir_host'])
                 submit_to_rpi(judge, read_out_and_check)
                 return
             else:
@@ -116,9 +120,13 @@ def test_one_case(testcase: dict):
             add_result(judge['work_dir'], {
                 'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 
                 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
+            return
         read_out_and_check(judge)
 
 def read_out_and_check(judge: dict):
+    if remove_elf_after_run:
+        if 'file_elf' in judge.keys() and os.path.exists(judge['file_elf']):
+            os.remove(judge['file_elf'])
     with open(judge['file_perf'], 'r') as fp:
         perf_text = fp.read()
     correct, comment = answer_check(judge['file_ans'], judge['file_out'])

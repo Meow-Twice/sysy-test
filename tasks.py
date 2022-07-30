@@ -42,8 +42,7 @@ CmdCompileARM   = 'java {jvm} -jar compiler.jar -S -o test.S test.sy {opt} 2>/ou
 CmdCompileAndRunInterpreter = 'java {jvm} -jar compiler.jar -I test.sy {opt} < input.txt >/output/output.txt 2>/output/perf.txt'.format(jvm=JvmOptions, opt=OptOptions)
 
 SysyImage = "sysy:latest"
-CmdGenElf = 'arm-linux-gnueabihf-gcc -march=armv7 --static -o test.elf test.S /usr/share/sylib/sylib.a 2>/output/err.txt; r=$?; \
-    if [ -e test.elf ]; then cp test.elf /output/; else exit $r; fi'
+CmdGenElf = 'arm-linux-gnueabihf-gcc -march=armv7 --static -o test.elf test.S /usr/share/sylib/sylib.a 2>/output/genelf.log'
 
 CmdRunLLVM = 'sysy-run-llvm.sh test.ll <input.txt >output.txt 2>/output/perf.txt; r=$?; \
     if [ ! -z "$(tail -c 1 output.txt)" ]; then echo >> output.txt; fi; echo $r >> output.txt; cp output.txt /output/'
@@ -80,12 +79,13 @@ def compile_testcase(client: docker.DockerClient, case_fullname: str, compiler_p
     container_wait(container, 'compile')
     printLog('{0} - compile finish.'.format(case_fullname))
 
-def genelf_testcase(client: docker.DockerClient, case_fullname: str, code_path: str, output_path: str):
+def genelf_testcase(client: docker.DockerClient, case_fullname: str, code_path: str, elf_path: str, output_path: str):
     container_name = 'compiler_{pid}_genelf_{name}'.format(pid=os.getpid(), name=case_fullname.replace('/', '_'))
     assert code_path.endswith('.S')
     printLog('{0} - elf generate begin'.format(case_fullname))
     container: Container = client.containers.run(image=SysyImage, command=wrap_cmd(CmdGenElf), detach=True, name=container_name, working_dir='/compiler', volumes={
         os.path.realpath(code_path): {'bind': '/compiler/test.S', 'mode': 'ro'},
+        os.path.realpath(elf_path): {'bind': '/compiler/test.elf', 'mode': 'rw'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     }, mem_limit=MemoryLimit)
     container_wait(container, 'genelf')

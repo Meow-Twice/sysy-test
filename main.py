@@ -7,7 +7,10 @@ from public import *
 from util import pretty_result, walk_testcase, display_result, archive_source
 from tasks import build_compiler
 from judge import test_one_case
-from rpi import setup_rpi
+from rpi import setup_rpi, wait_rpi_all
+
+# 初始化树莓派
+setup_rpi(RpiAddresses)
 
 if RebuildCompiler:
     build_compiler(DockerClient, CompilerSrc, CompilerBuild)
@@ -17,12 +20,11 @@ if CacheSource:
 
 testcases = walk_testcase(TestcaseBaseDir, TestcaseSelect)
 
-# 初始化树莓派
-setup_rpi(RpiAddresses)
-
-# 使用线程池运行测试点
+# # 使用线程池运行测试点
 with ThreadPoolExecutor(max_workers=NumParallel) as pool:
     pool.map(test_one_case, testcases)
+
+wait_rpi_all()
 
 with open(os.path.join(logDir, 'result_' + logName + '.html'), 'w') as fp:
     fp.write(display_result(results, title=logName))

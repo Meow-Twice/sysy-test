@@ -2,120 +2,140 @@ import os, shutil
 
 from const import *
 from tasks import *
-from util import answer_check
+from util import answer_check, add_result
 from public import *
-from rpi import submit_to_rpi_and_wait
+from rpi import submit_to_rpi
 from logger import printLog
 
 judge_type = RunType
 
-# testcase is a tuple of (series_name, case_name, path_to_sy, path_to_in, path_to_out)
-def test_one_case(testcase: tuple): 
+# testcase: {series_name, case_name, file_src, file_in, file_ans}
+# judge_context: {series_name, case_name, work_dir, out_dir, work_dir_host, out_dir_host, 
+#   file_src, file_src_host, file_in, file_in_host, file_ans, file_out, file_perf}
+def test_one_case(testcase: dict):
     global judge_type
-    series_name, case_name, origin_sy, origin_in, origin_ans = testcase
-    full_name = os.path.join(series_name, case_name)
-    printLog('{0} start.'.format(full_name))
-
+    judge = dict()
+    series_name, case_name = judge['series_name'], judge['case_name'] = testcase['series_name'], testcase['case_name']
+    judge['case_fullname'] = os.path.join(testcase['series_name'], testcase['case_name'])
+    printLog('{0} start.'.format(judge['case_fullname']))
     # Resolve dir and filenames
-    workDir = os.path.join(logDir, series_name, case_name)
-    outDir = os.path.join(workDir, 'output')
+    judge['work_dir'] = os.path.join(logDir, series_name, case_name)
+    judge['out_dir'] = os.path.join(judge['work_dir'], 'output')
     # dirs on host (pass to docker -v)
-    workDirHost = os.path.join(logDirHost, series_name, case_name)
-    outDirHost = os.path.join(workDirHost, 'output')
-    os.makedirs(workDir, mode=0o755, exist_ok=True)
-    file_sy, file_host_sy   = os.path.join(workDir, case_name + '.sy'), os.path.join(workDirHost, case_name + '.sy')
-    file_in, file_host_in   = os.path.join(workDir, case_name + '.in'), os.path.join(workDirHost, case_name + '.in')
-    file_ans    = os.path.join(workDir, case_name + '.out')
-    file_out    = os.path.join(workDir, 'output.txt')
-    file_perf   = os.path.join(workDir, 'perf.txt')
+    judge['work_dir_host'] = os.path.join(logDirHost, series_name, case_name)
+    judge['out_dir_host'] = os.path.join(judge['work_dir_host'], 'output')
+    os.makedirs(judge['work_dir'], mode=0o755, exist_ok=True)
+    judge['file_src']       = os.path.join(judge['work_dir'], case_name + '.sy')
+    judge['file_src_host']  = os.path.join(judge['work_dir_host'], case_name + '.sy')
+    judge['file_in']        = os.path.join(judge['work_dir'], case_name + '.in')
+    judge['file_in_host']   = os.path.join(judge['work_dir_host'], case_name + '.in')
+    judge['file_ans']       = os.path.join(judge['work_dir'], case_name + '.out')
+    judge['file_out']       = os.path.join(judge['work_dir'], 'output.txt')
+    judge['file_perf']      = os.path.join(judge['work_dir'], 'perf.txt')
 
     # Prepare given files
-    shutil.copy(origin_sy, file_sy)
-    if not os.path.exists(origin_in):
-        open(file_in, 'w').close() # create an empty file
+    shutil.copy(testcase['file_src'], judge['file_src'])
+    if not os.path.exists(testcase['file_in']):
+        open(judge['file_in'], 'w').close() # create an empty file
     else:
-        shutil.copy(origin_in, file_in)
-    shutil.copy(origin_ans, file_ans)
+        shutil.copy(testcase['file_in'], judge['file_in'])
+    shutil.copy(testcase['file_ans'], judge['file_ans'])
     # Compile Testcase
     if judge_type == TYPE_INTERPRET:
         try:
-            run_interpreter(DockerClient, series_name, case_name, CompilerPath, file_host_sy, file_host_in, outDirHost)
-            shutil.copy(os.path.join(outDir, 'output.txt'), file_out)
-            shutil.copy(os.path.join(outDir, 'perf.txt'), file_perf)
+            run_interpreter(DockerClient, judge['case_fullname'], CompilerPath, judge['file_src_host'], judge['file_in_host'], judge['out_dir_host'])
+            shutil.copy(os.path.join(judge['out_dir'], 'output.txt'), judge['file_out'])
+            shutil.copy(os.path.join(judge['out_dir'], 'perf.txt'), judge['file_perf'])
         except Exception as e:
             verdict = RUNTIME_ERROR
             comment = str(e)
-            add_result(workDir, {'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
-            printLog('Testcase {0} Interpret Error with {1}'.format(full_name, comment))
+            printLog('Interpret Error({0}): {1}'.format(judge['case_fullname'], comment))
+            add_result(judge['work_dir'], {
+                'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 
+                'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''
+            })
             return
     else:
         try:
             if judge_type == TYPE_LLVM:
-                compile_testcase(DockerClient, series_name, case_name, CompilerPath, file_host_sy, outDirHost, 'llvm')
+                compile_testcase(DockerClient, judge['case_fullname'], CompilerPath, judge['file_src_host'], judge['out_dir_host'], 'llvm')
             elif judge_type == TYPE_QEMU or judge_type == TYPE_RPI or judge_type == TYPE_RPI_ELF:
-                compile_testcase(DockerClient, series_name, case_name, CompilerPath, file_host_sy, outDirHost, 'arm')
+                compile_testcase(DockerClient, judge['case_fullname'], CompilerPath, judge['file_src_host'], judge['out_dir_host'], 'arm')
             else:
                 printLog('Not Supported Judge Type: {0}'.format(judge_type))
                 return
         except Exception as e:
             verdict = COMPILE_ERROR
             comment = str(e)
-            add_result(workDir, {'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
-            printLog('Testcase {0} COMPILE_ERROR with {1}'.format(full_name, comment))
+            printLog('Compile error ({0}): {1}'.format(judge['case_fullname'], comment))
+            add_result(judge['work_dir'], {
+                'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 
+                'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''
+            })
             return
         # Get compiled target of testcase
         if judge_type == TYPE_LLVM:
-            file_code = os.path.join(workDir, case_name + '.ll') # LLVM
-            file_host_code = os.path.join(workDirHost, case_name + '.ll')
-            shutil.copy(os.path.join(outDir, 'test.ll'), file_code)
+            judge['file_ll'] = os.path.join(judge['work_dir'], case_name + '.ll') # LLVM
+            judge['file_ll_host'] = os.path.join(judge['work_dir_host'], case_name + '.ll')
+            shutil.copy(os.path.join(judge['out_dir'], 'test.ll'), judge['file_ll'])
         else:
-            file_code = os.path.join(workDir, case_name + '.S') # ARM
-            file_host_code = os.path.join(workDirHost, case_name + '.S')
-            shutil.copy(os.path.join(outDir, 'test.S'), file_code)
-        printLog('{0} compiled.'.format(full_name))
+            judge['file_asm'] = os.path.join(judge['work_dir'], case_name + '.S') # ARM
+            judge['file_asm_host'] = os.path.join(judge['work_dir_host'], case_name + '.S')
+            shutil.copy(os.path.join(judge['out_dir'], 'test.S'), judge['file_asm'])
+        printLog('{0} compiled.'.format(judge['case_fullname']))
         # Run target code
         try:
             if judge_type == TYPE_LLVM:
-                run_testcase(DockerClient, series_name, case_name, file_host_code, file_host_in, outDirHost, 'llvm')
-                shutil.copy(os.path.join(outDir, 'output.txt'), file_out)
-                shutil.copy(os.path.join(outDir, 'perf.txt'), file_perf)
+                run_testcase(DockerClient, judge['case_fullname'], judge['file_ll_host'], judge['file_in_host'], judge['out_dir_host'], 'llvm')
+                shutil.copy(os.path.join(judge['out_dir'], 'output.txt'), judge['file_out'])
+                shutil.copy(os.path.join(judge['out_dir'], 'perf.txt'), judge['file_perf'])
             elif judge_type == TYPE_QEMU:
-                genelf_testcase(DockerClient, series_name, case_name, file_host_code, outDirHost)
-                file_elf = os.path.join(workDir, case_name + '.elf')
-                file_host_elf = os.path.join(workDirHost, case_name + '.elf')
-                shutil.copy(os.path.join(outDir, 'test.elf'), file_elf)
-                run_testcase(DockerClient, series_name, case_name, file_host_elf, file_host_in, outDirHost, 'qemu')
-                shutil.copy(os.path.join(outDir, 'output.txt'), file_out)
-                shutil.copy(os.path.join(outDir, 'perf.txt'), file_perf)
+                genelf_testcase(DockerClient, judge['case_fullname'], judge['file_asm_host'], judge['out_dir_host'])
+                judge['file_elf'] = os.path.join(judge['work_dir'], case_name + '.elf')
+                judge['file_elf_host'] = os.path.join(judge['work_dir_host'], case_name + '.elf')
+                shutil.copy(os.path.join(judge['out_dir'], 'test.elf'), judge['file_elf'])
+                run_testcase(DockerClient, judge['case_fullname'], judge['file_elf_host'], judge['file_in_host'], judge['out_dir_host'], 'qemu')
+                shutil.copy(os.path.join(judge['out_dir'], 'output.txt'), judge['file_out'])
+                shutil.copy(os.path.join(judge['out_dir'], 'perf.txt'), judge['file_perf'])
             elif judge_type == TYPE_RPI:
-                submit_to_rpi_and_wait((full_name, file_code, file_in, file_out, file_perf, False))
+                submit_to_rpi(judge, read_out_and_check)
+                return  # get result is async
             elif judge_type == TYPE_RPI_ELF:
-                genelf_testcase(DockerClient, series_name, case_name, file_host_code, outDirHost)
-                file_elf = os.path.join(workDir, case_name + '.elf')
-                shutil.copy(os.path.join(outDir, 'test.elf'), file_elf)
-                submit_to_rpi_and_wait((full_name, file_elf, file_in, file_out, file_perf, True))
+                genelf_testcase(DockerClient, judge['case_fullname'], judge['file_asm_host'], judge['out_dir_host'])
+                judge['file_elf'] = os.path.join(judge['work_dir'], case_name + '.elf')
+                shutil.copy(os.path.join(judge['out_dir'], 'test.elf'), judge['file_elf'])
+                submit_to_rpi(judge, read_out_and_check)
+                return
             else:
                 printLog('Not Supported Judge Type: {0}'.format(judge_type))
                 return
         except Exception as e:
             verdict = RUNTIME_ERROR
             comment = str(e)
-            add_result(workDir, {'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
-            printLog('Testcase {0} RUNTIME_ERROR with {1}'.format(full_name, comment))
-            return
-    printLog('{0} executed.'.format(full_name))
-    # Read result and check
-    with open(file_perf, 'r') as fp:
+            printLog('Runtime error ({0}): {1}'.format(judge['case_fullname'], comment))
+            add_result(judge['work_dir'], {
+                'series_name': series_name, 'case_name': case_name, 'verdict': verdict, 
+                'comment': comment, 'perf': '', 'stdin': '', 'stdout': '', 'answer': ''})
+        read_out_and_check(judge)
+
+def read_out_and_check(judge: dict):
+    with open(judge['file_perf'], 'r') as fp:
         perf_text = fp.read()
-    correct, comment = answer_check(file_ans, file_out)
+    correct, comment = answer_check(judge['file_ans'], judge['file_out'])
     if not correct:
-        with open(file_in, 'r') as fp:
+        with open(judge['file_in'], 'r') as fp:
             stdin_text = fp.read()
-        with open(file_out, 'r') as fp:
+        with open(judge['file_out'], 'r') as fp:
             stdout_text = fp.read()
-        with open(file_ans, 'r') as fp:
+        with open(judge['file_ans'], 'r') as fp:
             answer_text = fp.read()
-        add_result(workDir, {'series_name': series_name, 'case_name': case_name, 'verdict': WRONG_ANSWER, 'comment': comment, 'perf': perf_text, 'stdin': stdin_text, 'stdout': stdout_text, 'answer': answer_text})
+        add_result(judge['work_dir'], {
+            'series_name': judge['series_name'], 'case_name': judge['case_name'], 'verdict': WRONG_ANSWER, 
+            'comment': comment, 'perf': perf_text, 'stdin': stdin_text, 'stdout': stdout_text, 'answer': answer_text
+        })
     else:
-        add_result(workDir, {'series_name': series_name, 'case_name': case_name, 'verdict': ACCEPTED, 'comment': comment, 'perf': perf_text, 'stdin': '', 'stdout': '', 'answer': ''})
-    printLog('{0} finished: correct={1}'.format(full_name, correct))
+        add_result(judge['work_dir'], {
+            'series_name': judge['series_name'], 'case_name': judge['case_name'], 'verdict': ACCEPTED, 
+            'comment': comment, 'perf': perf_text, 'stdin': '', 'stdout': '', 'answer': ''
+        })
+

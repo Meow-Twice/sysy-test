@@ -1,5 +1,5 @@
 import docker
-import os, sys, json
+import os, sys, json, shutil
 from datetime import datetime
 
 DockerClient = docker.from_env()
@@ -40,22 +40,17 @@ TimeoutSecs = get_config('timeout', 60)
 
 JvmOptions = get_config('jvm-options', "")
 
-EnableOptimize = get_config('enable-optimize', False)
-OptOption = "-O2" if EnableOptimize else ""
+OptOptions = get_config('opt-options', "")
 
 MemoryLimit = get_config('memory-limit', '256m')
 
 logName = datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + "_" + str(os.getpid())
 logDir = os.path.realpath(os.path.join(LogDirBase, logName))
-os.makedirs(logDir)
-
 logDirHost = os.path.realpath(os.path.join(LogDirHostBase, logName))
+
+os.makedirs(logDir)
+shutil.copy(ConfigFile, os.path.join(logDir, os.path.basename(ConfigFile)))
 
 logFile = open(os.path.join(logDir, logName + '.log'), 'a')
 
 results = [] # {series, name, verdict, comment, perf, stdin, stdout, answer}
-
-def add_result(workDir: str, result):
-    results.append(result)
-    with open(os.path.join(workDir, 'result.json'), "w") as fp:
-        json.dump(result, fp=fp)

@@ -34,12 +34,12 @@ CmdBuildCompiler = 'javac -d target -encoding \'utf-8\' $(find src -name \'*.jav
     echo -e \'Manifest-Version: 1.0\\r\\nMain-Class: Compiler\\r\\n\\r\\n\' > META-INF/MANIFEST.MF; \
     jar -cvfm compiler.jar META-INF/MANIFEST.MF *'
 
-CmdCompileLLVM  = 'java {jvm} -jar compiler.jar -emit-llvm -o test.ll test.sy {opt} 2>/output/comp-err.txt; r=$?; cp test.ll /output/; \
-    exit $r'.format(jvm=JvmOptions, opt=OptOption)
-CmdCompileARM   = 'java {jvm} -jar compiler.jar -S -o test.S test.sy {opt} 2>/output/comp-err.txt; r=$?; cp test.S /output/; \
-    exit $r'.format(jvm=JvmOptions, opt=OptOption)
+CmdCompileLLVM  = 'java {jvm} -jar compiler.jar -emit-llvm -o test.ll test.sy {opt} 2>/output/compile.log; r=$?; cp test.ll /output/; \
+    exit $r'.format(jvm=JvmOptions, opt=OptOptions)
+CmdCompileARM   = 'java {jvm} -jar compiler.jar -S -o test.S test.sy {opt} 2>/output/compile.log; r=$?; cp test.S /output/; \
+    exit $r'.format(jvm=JvmOptions, opt=OptOptions)
 
-CmdCompileAndRunInterpreter = 'java {jvm} -jar compiler.jar -I test.sy {opt} < input.txt >/output/output.txt 2>/output/perf.txt'.format(jvm=JvmOptions, opt=OptOption)
+CmdCompileAndRunInterpreter = 'java {jvm} -jar compiler.jar -I test.sy {opt} < input.txt >/output/output.txt 2>/output/perf.txt'.format(jvm=JvmOptions, opt=OptOptions)
 
 SysyImage = "sysy:latest"
 CmdGenElf = 'arm-linux-gnueabihf-gcc -march=armv7 --static -o test.elf test.S /usr/share/sylib/sylib.a 2>/output/err.txt; r=$?; \
@@ -63,10 +63,9 @@ def build_compiler(client: docker.DockerClient, source_path: str, artifact_path:
     container_wait(container, 'build_compiler')
     printLog('compiler build finished.')
 
-def compile_testcase(client: docker.DockerClient, series_name: str, case_name: str, compiler_path: str, sy_path: str, output_path: str, type: str='arm'):
-    fullname = os.path.join(series_name, case_name)
-    container_name = 'compiler_{pid}_compile_{type}_{series}_{name}'.format(pid=os.getpid(), type=type, series=series_name, name=case_name)
-    printLog('{0} - compiling'.format(fullname))
+def compile_testcase(client: docker.DockerClient, case_fullname: str, compiler_path: str, sy_path: str, output_path: str, type: str='arm'):
+    container_name = 'compiler_{pid}_compile_{type}_{name}'.format(pid=os.getpid(), type=type, name=case_fullname.replace('/', '_'))
+    printLog('{0} - compiling'.format(case_fullname))
     if type == 'llvm':
         cmd = CmdCompileLLVM
     elif type == 'arm':
@@ -79,25 +78,23 @@ def compile_testcase(client: docker.DockerClient, series_name: str, case_name: s
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     }, mem_limit=MemoryLimit)
     container_wait(container, 'compile')
-    printLog('{0} - compile finish.'.format(fullname))
+    printLog('{0} - compile finish.'.format(case_fullname))
 
-def genelf_testcase(client: docker.DockerClient, series_name: str, case_name: str, code_path: str, output_path: str):
-    fullname = os.path.join(series_name, case_name)
-    container_name = 'compiler_{pid}_genelf_{series}_{name}'.format(pid=os.getpid(), series=series_name, name=case_name)
+def genelf_testcase(client: docker.DockerClient, case_fullname: str, code_path: str, output_path: str):
+    container_name = 'compiler_{pid}_genelf_{name}'.format(pid=os.getpid(), name=case_fullname.replace('/', '_'))
     assert code_path.endswith('.S')
-    printLog('{0} - elf generate begin'.format(fullname))
+    printLog('{0} - elf generate begin'.format(case_fullname))
     container: Container = client.containers.run(image=SysyImage, command=wrap_cmd(CmdGenElf), detach=True, name=container_name, working_dir='/compiler', volumes={
         os.path.realpath(code_path): {'bind': '/compiler/test.S', 'mode': 'ro'},
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     }, mem_limit=MemoryLimit)
     container_wait(container, 'genelf')
-    printLog('{0} - elf generated.'.format(fullname))
+    printLog('{0} - elf generated.'.format(case_fullname))
 
-def run_testcase(client: docker.DockerClient, series_name: str, case_name: str, code_path: str, input_path: str, output_path: str, type: str):
-    fullname = os.path.join(series_name, case_name)
+def run_testcase(client: docker.DockerClient, case_fullname: str, code_path: str, input_path: str, output_path: str, type: str):
     _, extension_name = os.path.basename(code_path).split('.')
-    container_name = 'compiler_{pid}_run_{type}_{series}_{name}'.format(pid=os.getpid(), type=type, series=series_name, name=case_name)
-    printLog('{0} - running'.format(fullname))
+    container_name = 'compiler_{pid}_run_{name}'.format(pid=os.getpid(), type=type, name=case_fullname.replace('/', '_'))
+    printLog('{0} - running'.format(case_fullname))
     if type == 'llvm':
         cmd = CmdRunLLVM
     elif type == 'qemu':
@@ -110,13 +107,13 @@ def run_testcase(client: docker.DockerClient, series_name: str, case_name: str, 
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     }, mem_limit=MemoryLimit)
     container_wait(container, 'run')
-    printLog('{0} - run finish.'.format(fullname))
+    printLog('{0} - run finish.'.format(case_fullname))
 
-def run_interpreter(client: docker.DockerClient, series_name: str, case_name: str, compiler_path: str, sy_path: str, input_path: str, output_path: str):
+def run_interpreter(client: docker.DockerClient, case_fullname: str, compiler_path: str, sy_path: str, input_path: str, output_path: str):
     _, extension_name = os.path.basename(sy_path).split('.')
     assert extension_name == 'sy'
-    container_name = 'compiler_{pid}_interpret_{series}_{name}'.format(pid=os.getpid(), series=series_name, name=case_name)
-    printLog('{0} - interpret begin.'.format(case_name))
+    container_name = 'compiler_{pid}_interpret_{name}'.format(pid=os.getpid(), name=case_fullname.replace('/', '_'))
+    printLog('{0} - interpret begin.'.format(case_fullname))
     container: Container = client.containers.run(image=JavaImage, command=wrap_cmd(CmdCompileAndRunInterpreter), detach=True, name=container_name, working_dir='/compiler', volumes={
         os.path.realpath(compiler_path): {'bind': '/compiler/compiler.jar', 'mode': 'ro'},
         os.path.realpath(sy_path): {'bind': '/compiler/test.sy', 'mode': 'ro'},
@@ -124,4 +121,4 @@ def run_interpreter(client: docker.DockerClient, series_name: str, case_name: st
         os.path.realpath(output_path): {'bind': '/output/', 'mode': 'rw'}
     }, mem_limit=MemoryLimit)
     container_wait(container, 'interpret')
-    printLog('{0} - interpret done.'.format(case_name))
+    printLog('{0} - interpret done.'.format(case_fullname))

@@ -92,4 +92,5 @@ def submit_to_rpi(judge: dict, callback):
     printLog('[Submit {0} to rpi waiting queue ...]'.format(judge['case_fullname']))
 
 def wait_rpi_all():
-    Executor.shutdown(wait=True)
+    if Executor is not None:
+        Executor.shutdown(wait=True)

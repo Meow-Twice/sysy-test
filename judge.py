@@ -96,7 +96,7 @@ def test_one_case(testcase: dict):
                 judge['file_elf_host'] = os.path.join(judge['work_dir_host'], case_name + '.elf')
                 open(judge['file_elf'], 'w').close()    # create an empty elf
                 genelf_testcase(DockerClient, judge['case_fullname'], judge['file_asm_host'], judge['file_elf_host'], judge['out_dir_host'])
-                os.chmod(judge['file_elf'], os.stat(judge['file_elf']) | stat.S_IEXEC)
+                os.chmod(judge['file_elf'], os.stat(judge['file_elf']).st_mode | stat.S_IEXEC)
                 run_testcase(DockerClient, judge['case_fullname'], judge['file_elf_host'], judge['file_in_host'], judge['out_dir_host'], 'qemu')
                 shutil.copy(os.path.join(judge['out_dir'], 'output.txt'), judge['file_out'])
                 shutil.copy(os.path.join(judge['out_dir'], 'perf.txt'), judge['file_perf'])

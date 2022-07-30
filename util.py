@@ -35,12 +35,11 @@ def answer_check(ans_file: str, out_file: str): # (correct: bool, comment: str)
     for i in range(l):
         ans_line, out_line = ans_lines[i].strip(), out_lines[i].strip()
         if ans_line != out_line:
-            return False, 'We got\n{0}\nWhen we expected\n{1}\nAt line {2}.'.format(out_line, ans_line, i + 1)
+            return False, 'We got\n{0}\nWhen we expected\n{1}\nAt line {2}.'.format(reduce_text(out_line, 20), reduce_text(ans_line, 20), i + 1)
     return True, 'Correct!'
 
 # 折叠过长的输入输出
-def reduce_text(txt: str):
-    limit = 100
+def reduce_text(txt: str, limit: int=100):
     l = len(txt)
     if l > limit:
         return txt[:limit] + "<i>(... total {0} bytes)</i>".format(l)

@@ -64,8 +64,6 @@ def display_result(results: list, title: str):
             result_out[2] = "<font color=\"green\">" + result_out[2] + "</font>"
         else:
             result_out[2] = "<font color=\"red\">" + result_out[2] + "</font>"
-        # 省略太长的输出
-        result_out[4:] = map(reduce_text, result_out[4:])
         table_rows.append("".join(['<td>{0}</td>'.format(s) for s in result_out]))
     text = '''<html>
 <head>
@@ -97,6 +95,9 @@ def add_result(workDir: str, result: dict):
         if type(result[k]) == str:
             result[k] = result[k].strip()
     results.append(result)
+    # 省略太长的输出
+    for k in ['perf', 'stdin', 'stdout', 'answer']:
+        result[k] = reduce_text(result[k], 100)
     printLog("{series}/{name}: {verdict}".format(series=result['series_name'], name=result['case_name'], verdict=result['verdict']))
     with open(os.path.join(workDir, 'result.json'), "w") as fp:
         json.dump(result, fp=fp)

@@ -47,7 +47,7 @@ def reduce_text(txt: str, limit: int=100):
 
 def get_summary(results: list) -> str:
     total_cases = len(results)
-    passed_cases = len(list(filter(lambda x : x['verdict'] == "ACCEPTED", results)))
+    passed_cases = len(list(filter(lambda x : x['verdict'] == ACCEPTED, results)))
     summary = 'Total {0} testcases, passed {1}.'.format(total_cases, passed_cases)
     return summary
 
@@ -60,7 +60,7 @@ def display_result(results: list, title: str):
         result_out = [result[k] for k in ['series_name', 'case_name', 'verdict', 'comment', 'perf', 'stdin', 'stdout', 'answer']]
         result_out = list(map(lambda s : html.escape(str(s)).replace('\n', '<br>'), result_out))
         # 评测结果颜色
-        if result['verdict'] == "ACCEPTED":
+        if result['verdict'] == ACCEPTED:
             result_out[2] = "<font color=\"green\">" + result_out[2] + "</font>"
         else:
             result_out[2] = "<font color=\"red\">" + result_out[2] + "</font>"

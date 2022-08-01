@@ -42,7 +42,7 @@ def answer_check(ans_file: str, out_file: str): # (correct: bool, comment: str)
 def reduce_text(txt: str, limit: int=100):
     l = len(txt)
     if l > limit:
-        return txt[:limit] + "<i>(... total {0} bytes)</i>".format(l)
+        return txt[:limit] + "(... total {0} bytes)".format(l)
     return txt
 
 def get_summary(results: list) -> str:

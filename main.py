@@ -1,5 +1,4 @@
 import os, json
-from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
 from const import *
@@ -37,5 +36,6 @@ print(result)
 with open(os.path.join(logDir, 'result_' + logName + '.txt'), 'w') as fp:
     fp.write(result)
 
+print("log name: {0}".format(logName))
 # close log file
 logFile.close()

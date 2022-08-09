@@ -38,6 +38,8 @@ CmdCompileLLVM  = 'java {jvm} -jar compiler.jar -emit-llvm -o test.ll test.sy {o
     exit $r'.format(jvm=JvmOptions, opt=OptOptions)
 CmdCompileARM   = 'java {jvm} -jar compiler.jar -S -o test.S test.sy {opt} 2>/output/compile.log; r=$?; cp test.S /output/; \
     exit $r'.format(jvm=JvmOptions, opt=OptOptions)
+CmdCompileAll   = 'java {jvm} -jar compiler.jar -emit-llvm -o test.ll -S -o test.S test.sy {opt} 2>/output/compile.log; r=$?; cp test.S test.ll /output/; \
+    exit $r'.format(jvm=JvmOptions, opt=OptOptions)
 
 CmdCompileAndRunInterpreter = 'java {jvm} -jar compiler.jar -I test.sy {opt} < input.txt >/output/output.txt 2>/output/perf.txt'.format(jvm=JvmOptions, opt=OptOptions)
 
@@ -69,6 +71,8 @@ def compile_testcase(client: docker.DockerClient, case_fullname: str, compiler_p
         cmd = CmdCompileLLVM
     elif type == 'arm':
         cmd = CmdCompileARM
+        if EmitLLVM:
+            cmd = CmdCompileAll
     else:
         raise Exception("compile type {0} not support yet".format(type))
     container: Container = client.containers.run(JavaImage, command=wrap_cmd(cmd), detach=True, name=container_name, working_dir='/compiler', volumes={

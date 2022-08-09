@@ -37,6 +37,7 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple # �
     "jvm-options": "",                                                // JVM 参数，例如 "-ea"，缺省值为空
     "memory-limit": "256m",                                           // docker 容器内存限制，如超出限制则容器被杀死，缺省值 '256m'
     "opt-options": "",                                                // 编译优化参数，追加到自己的编译器的必需参数之后，例如 "-O2"
+    "emit-llvm": false,                                               // 测试后端时顺带输出 LLVM IR
     "run-type": "llvm",                                               // 可选值 "llvm", "qemu", "rpi", "rpi-elf", "interpret"
     "rpi-addresses": ["http://192.168.1.2:9000"],                     // 树莓派 API 地址列表 (如不测试树莓派可留空)
     "log-dir": "logs",                                                // 评测记录存放路径 (可以是相对路径) 缺省值为 `logs`

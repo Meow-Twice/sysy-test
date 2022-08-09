@@ -39,10 +39,10 @@ LogDirHostBase = get_config('log-dir-host', LogDirBase)
 TimeoutSecs = get_config('timeout', 60)
 
 JvmOptions = get_config('jvm-options', "")
-
 OptOptions = get_config('opt-options', "")
 
 MemoryLimit = get_config('memory-limit', '256m')
+EmitLLVM = get_config('emit-llvm', False)
 
 logName = datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + "_" + str(os.getpid())
 logDir = os.path.realpath(os.path.join(LogDirBase, logName))

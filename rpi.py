@@ -13,7 +13,7 @@ API_INPUT       = "/input"
 API_OUTPUT      = "/output"
 API_PERF        = "/perf"
 
-REQUEST_TIMEOUT = 65536
+REQUEST_TIMEOUT = 300
 
 def run_testcase_on_pi(rpi_address: str, judge: dict):
     rpi_testcase_ident = 'rpi {name} @ {addr}'.format(name=judge['case_fullname'], addr=rpi_address)
